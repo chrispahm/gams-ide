@@ -1,0 +1,10 @@
+node_modules
+.vscode-test/
+*.vsix
+*.dat
+*.dmp
+*.log
+*.gdx
+*.err
+*.lst
+*.err

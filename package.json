@@ -1,0 +1,173 @@
+{
+  "name": "gams-ide",
+  "displayName": "gams-ide",
+  "description": "A GAMS integrated development environment for vscode",
+  "version": "0.0.1",
+  "engines": {
+    "vscode": "^1.70.0"
+  },
+  "categories": [
+    "Other"
+  ],
+  "enabledApiProposals": [
+    "extensionRuntime"
+  ],
+  "activationEvents": [
+    "onLanguage:gams"
+  ],
+  "contributes": {
+    "commands": [
+      {
+        "command": "gams.run",
+        "title": "GAMS: Run"
+      },
+      {
+        "command": "gams.openSidebar",
+        "title": "GAMS: Open Sidebar"
+      },
+      {
+        "command": "gams.openSymbolPanel",
+        "title": "GAMS: Open Symbol Panel"
+      }
+    ],
+    "configuration": {
+      "title": "GAMS-IDE",
+      "properties": {
+        "gamsIde.gamsExecutable": {
+          "description": "Path to GAMS executable, will default to PATH or common install directories.",
+          "type": "string",
+          "default": ""
+        },
+        "gamsIde.scratchDirectory": {
+          "description": "The (scratch) directory where linter-GAMS will read/write temp files. Ideally located on a fast internal disk.",
+          "type": "string",
+          "default": ""
+        },
+        "gamsIde.maxErrorsToDisplay": {
+          "description": "The maximum amount of errors that will be highlighted by linter-gams. Put a 0 if no maximum should be defined. Keep in mind that often only the first error is an actual GAMS error, while the subsequent errors may result from the first error.",
+          "type": "integer",
+          "default": 1
+        },
+        "gamsIde.showCompilationNotifications": {
+          "description": "Notify when GAMS encountered system issues (e.g. missing .opt files) during compilation.",
+          "type": "boolean",
+          "default": true
+        },
+        "gamsIde.jumpToAbort": {
+          "description": "In the listing file, automatically jump to the abort parameter if present. Gams View needs to be open.",
+          "type": "boolean",
+          "default": true
+        },
+        "gamsIde.autoUnfoldListingEntriesTreshold": {
+          "description": "Automatically unfold listing entries (e.g. Displays) if their amount does not exceed the following value.",
+          "type": "integer",
+          "default": 10
+        },
+        "gamsIde.onlyAutoUnfoldDisplayStatements": {
+          "description": "If true, only displays will be unfolded, else all entries that fall below the treshold above will be unfolded.",
+          "type": "boolean",
+          "default": true
+        },
+        "gamsIde.defaultParameterToJumpToAfterSolve": {
+          "description": "If found, the listing will be auto-scrolled to the following display paramter. Gams View needs to be open.",
+          "type": "string",
+          "default": "p_sumRes"
+        },
+        "gamsIde.multi_fileEntryPoint": {
+          "description": "You may specify the GAMS entry file for multi file models. Remember that for GGIG models these will be set by default.",
+          "type": "string",
+          "default": "exp_starter.gms"
+        },
+        "gamsIde.commandLineArguments_compilation": {
+          "description": "Additional command line arguments to pass to GAMS during compilation.",
+          "type": "array",
+          "default": []
+        },
+        "gamsIde.commandLineArguments_execution": {
+          "description": "Additional command line arguments to pass to GAMS during execution.",
+          "type": "array",
+          "default": []
+        },
+        "gamsIde.parseSymbolValues": {
+          "description": "Show symbol values for each solve in a console panel in the bottom dock. Recommended only for high end computers with >= 8gb RAM",
+          "type": "boolean",
+          "default": false
+        },
+        "gamsIde.consoleLimrow": {
+          "description": "LIMROW setting if parse symbol values is turned on",
+          "type": "integer",
+          "default": 3
+        },
+        "gamsIde.consoleLimcol": {
+          "description": "LIMCOL setting if parse symbol values is turned on",
+          "type": "integer",
+          "default": 3
+        },
+        "gamsIde.consoleDispWidth": {
+          "description": "dispWidth setting if parse symbol values is turned on",
+          "type": "integer",
+          "default": 15
+        }
+      }
+    },
+    "viewsContainers": {
+      "activitybar": [
+        {
+          "id": "gamsIdeViewContainer",
+          "title": "GAMS References",
+          "icon": "media/logo.svg"
+        }
+      ],
+      "panel": [
+        {
+          "id": "gamsIdeSymbolContainer",
+          "title": "GAMS Symbols",
+          "icon": "media/logo.svg"
+        }
+      ]
+    },
+    "views": {
+      "gamsIdeViewContainer": [
+        {
+          "type": "webview",
+          "id": "gamsIdeView",
+          "name": ""
+        }
+      ],
+      "gamsIdeSymbolContainer": [
+        {
+          "type": "webview",
+          "id": "gamsIdeSymbolView",
+          "name": ""
+        }
+      ]
+    }
+  },
+  "main": "./extension.js",
+  "scripts": {
+    "lint": "eslint .",
+    "pretest": "npm run lint",
+    "test": "node ./test/runTest.js"
+  },
+  "devDependencies": {
+    "@types/glob": "^8.1.0",
+    "@types/mocha": "^9.1.1",
+    "@types/node": "16.x",
+    "@types/vscode": "^1.70.0",
+    "@vscode/test-electron": "^2.1.5",
+    "eslint": "^8.20.0",
+    "mocha": "^10.0.0",
+    "typescript": "^4.7.4"
+  },
+  "dependencies": {
+    "@vscode/codicons": "^0.0.32",
+    "glob": "^10.2.7",
+    "lodash": "^4.17.21",
+    "node-gdx": "^1.0.5",
+    "readline-specific": "^1.0.4",
+    "shelljs": "^0.8.5"
+  },
+  "extensionDependencies": [
+    "lolow.gams"
+  ]
+}
