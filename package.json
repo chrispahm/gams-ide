@@ -176,7 +176,8 @@
     "lodash": "^4.17.21",
     "node-gdx": "^1.0.5",
     "readline-specific": "^1.0.4",
-    "shelljs": "^0.8.5"
+    "shelljs": "^0.8.5",
+    "vsce": "^2.15.0"
   },
   "extensionDependencies": [
     "lolow.gams"
