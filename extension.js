@@ -118,7 +118,7 @@ async function activate(context) {
       };
       const vueUri = webviewView.webview.asWebviewUri(vscode.Uri.joinPath(context.extensionUri, 'view', 'vue.esm-browser.js'));
       const webviewToolkitUri = webviewView.webview.asWebviewUri(vscode.Uri.joinPath(context.extensionUri, 'view', 'webview-ui-toolkit.esm.js'));
-      const codiconsUri = webviewView.webview.asWebviewUri(vscode.Uri.joinPath(context.extensionUri, 'node_modules', '@vscode/codicons', 'dist', 'codicon.css'));
+      const codiconsUri = webviewView.webview.asWebviewUri(vscode.Uri.joinPath(context.extensionUri, 'view', 'codicon.css'));
       // Set the webview content
       webviewView.webview.html = getGamsIdeViewContainerContent({
         vueUri,
@@ -234,7 +234,7 @@ async function activate(context) {
           vscode.Uri.joinPath(context.extensionUri, 'view', 'webview-ui-toolkit.esm.js'));
         const codiconsUri = webviewView.webview.asWebviewUri(
           vscode.Uri.joinPath(
-            context.extensionUri, 'node_modules', '@vscode/codicons', 'dist', 'codicon.css'
+            context.extensionUri, 'view', 'codicon.css'
           )
         );
         // Set the webview content
