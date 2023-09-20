@@ -63,6 +63,10 @@ https://cdn.jsdelivr.net/npm/simple-undo@1.0.2/lib/simple-undo.min.js
         <span>
           If you expect this symbol to be in the reference tree, check your models program flow as well as the GAMS log file for errors!
         </span>
+        <br>
+        <span>
+          Also note that at least one solve statement is required for symbols to appear.
+        </span>
       </div>
       <div v-if="name" slot="content" style="margin-bottom: 40px;">
       <h1>{{name}}</h1>

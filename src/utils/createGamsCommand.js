@@ -22,9 +22,12 @@ module.exports = async function createGamsCommand(document, extraArgs = []) {
   }
 
   // check if there is a .gams-ide-settings.json file in the same folder, or in a parent folder
-  const pattern = new vscode.RelativePattern(vscode.workspace.workspaceFolders[0], `**/.gams-ide-settings.json`);
-  const settingsFiles = await vscode.workspace.findFiles(pattern);
-  
+  let settingsFiles = [];
+
+  if (vscode.workspace.workspaceFolders && vscode.workspace.workspaceFolders.length) {
+    const pattern = new vscode.RelativePattern(vscode.workspace.workspaceFolders[0], `**/.gams-ide-settings.json`);
+    settingsFiles = await vscode.workspace.findFiles(pattern);
+  }
   // check if a settingsFile exists, if so, read the seetings 
   // "Gams Executable", "Scratch directory", "Multi-file entry point", 
   // and "Command Line Arguments - Execution"
@@ -38,7 +41,7 @@ module.exports = async function createGamsCommand(document, extraArgs = []) {
   }
   
   // if a multi-file entry point is specified, we try to find the file in the workspace
-  if (multiFileEntryPoint) {
+  if (multiFileEntryPoint && vscode.workspace.workspaceFolders && vscode.workspace.workspaceFolders.length) {
     const pattern = new vscode.RelativePattern(vscode.workspace.workspaceFolders[0], `**/${multiFileEntryPoint}`);
     const files = await vscode.workspace.findFiles(pattern);
     

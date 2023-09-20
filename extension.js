@@ -131,10 +131,10 @@ async function activate(context) {
         async message => {
           // get current cursor position
           const editor = vscode.window.activeTextEditor;
-          const position = editor.selection.active;
-          const file = editor.document.fileName;
-          const line = position.line;
-          const column = position.character;
+          const position = editor.selection?.active ;
+          const file = editor.document?.fileName;
+          const line = position?.line;
+          const column = position?.character;
 
           switch (message.command) {
             case 'jumpToPosition':
@@ -229,6 +229,7 @@ async function activate(context) {
         webviewView.webview.options = {
           enableScripts: true
         };
+        
         const webviewToolkitUri = webviewView.webview.asWebviewUri(
           vscode.Uri.joinPath(context.extensionUri, 'view', 'webview-ui-toolkit.esm.js'));
         const codiconsUri = webviewView.webview.asWebviewUri(
