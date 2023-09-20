@@ -18,7 +18,7 @@ module.exports = async function createGamsCommand(document, extraArgs = []) {
   // if the scratch directory is not specified, we use 
   // this extension's scratch directory
   if (!scratchDirectory) {
-    scratchDirectory = resolve(__dirname + '/../../scrdir');
+    scratchDirectory = resolve(__dirname + '/../scrdir');
   }
 
   // check if there is a .gams-ide-settings.json file in the same folder, or in a parent folder
