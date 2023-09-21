@@ -6,6 +6,7 @@ const getSymbolUnderCursor = require("./src/getSymbolUnderCursor");
 const getGamsIdeViewContainerContent = require("./src/utils/getGamsIdeViewContainerContent");
 const getGamsIdeSymbolViewContainerContent = require("./src/utils/getGamsIdeSymbolViewContainerContent");
 const debouncedListenToLstFiles = require("./src/parseLstFiles");
+const State = require("./src/State.js");
 
 let terminal;
 let gamsView;
@@ -20,7 +21,7 @@ async function activate(context) {
   // if not, create a terminal for compiling and executing GAMS files
   if (!terminal) terminal = vscode.window.createTerminal("GAMS");
 
-  const state = context.workspaceState;
+  const state = new State();
   // start listening to save events to generate diagnostics
   const collection = vscode.languages.createDiagnosticCollection("gams");
   if (vscode.window.activeTextEditor) {
