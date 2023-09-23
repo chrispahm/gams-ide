@@ -2,7 +2,7 @@
   "name": "gams-ide",
   "displayName": "gams-ide",
   "description": "A GAMS integrated development environment for vscode",
-  "version": "0.0.1",
+  "version": "0.0.37",
   "repository": {
     "type": "git",
     "url": "https://github.com/chrispahm/gams-ide"
@@ -23,6 +23,18 @@
       {
         "command": "gams.run",
         "title": "GAMS: Run"
+      },
+      {
+        "command": "gams.runThisFile",
+        "title": "GAMS: Run this file"
+      },
+      {
+        "command": "gams.compile",
+        "title": "GAMS: Compile"
+      },
+      {
+        "command": "gams.compileThisFile",
+        "title": "GAMS: Compile this file"
       },
       {
         "command": "gams.openSidebar",
@@ -57,7 +69,7 @@
           "default": true
         },
         "gamsIde.jumpToAbort": {
-          "description": "In the listing file, automatically jump to the abort parameter if present. Gams View needs to be open.",
+          "description": "In the listing file, automatically jump to the abort parameter if present.",
           "type": "boolean",
           "default": true
         },
@@ -72,9 +84,14 @@
           "default": true
         },
         "gamsIde.defaultParameterToJumpToAfterSolve": {
-          "description": "If found, the listing will be auto-scrolled to the following display paramter. Gams View needs to be open.",
+          "description": "If found, the listing will be auto-scrolled to the following display paramter.",
           "type": "string",
           "default": "p_sumRes"
+        },
+        "gamsIde.autoScrollToEndOfListing": {
+          "description": "If true, the listing will be scrolled to the end after a solve.",
+          "type": "boolean",
+          "default": true
         },
         "gamsIde.multi_fileEntryPoint": {
           "description": "You may specify the GAMS entry file for multi file models. Remember that for GGIG models these will be set by default.",
@@ -94,7 +111,7 @@
         "gamsIde.parseSymbolValues": {
           "description": "Show symbol values for each solve in a console panel in the bottom dock. Recommended only for high end computers with >= 8gb RAM",
           "type": "boolean",
-          "default": true
+          "default": false
         },
         "gamsIde.consoleLimrow": {
           "description": "LIMROW setting if parse symbol values is turned on",
@@ -175,9 +192,9 @@
     "@vscode/codicons": "^0.0.32",
     "glob": "^10.2.7",
     "lodash": "^4.17.21",
-    "node-gdx": "^1.0.5",
     "readline-specific": "^1.0.4",
-    "shelljs": "^0.8.5"
+    "shelljs": "^0.8.5",
+    "table": "^6.8.1"
   },
   "extensionDependencies": [
     "lolow.gams"

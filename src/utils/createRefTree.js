@@ -4,7 +4,7 @@ const path = require('path')
 const _ = require('lodash')
 
 module.exports = function createRefTree(refFile) {
-  return new Promise(resolve => {
+  return new Promise((resolve, reject) => {
     const rl = readline.createInterface({
       input: fs.createReadStream(refFile),
       crlfDelay: Infinity
@@ -113,5 +113,7 @@ module.exports = function createRefTree(refFile) {
       })
       resolve(_.values(json))
     })
+
+    rl.on('error', reject)
   })
 }
