@@ -72,24 +72,24 @@ abort myParameterOrSet;
 and run your model (see section above), gams-ide will automatically jump to the parameter display in the listing file. Make sure you have the GAMS View sidebar opened, otherwise the listing file will be opened at the beggining of the document.
 
 ### Project configuration
-When working with multiple projects, individual project configuration files can be specified. The project file should be located in the projects `root` directory. If you need to specify a model-entry file, make sure that the `.gams-ide-settings.json` file is in the same directory.
+When working with multiple projects, individual project configuration files can be specified. The project file should be located in the projects `root` directory. If you need to specify a model-entry file, make sure that the `gams-ide-settings.json` file is in the same directory.
 
-Example of a `.gams-ide-settings.json` configuration file.
+Example of a `gams-ide-settings.json` configuration file.
 ```js
 {
-  'Gams Executable': 'String',
-  'Scratch directory': 'String',
-  'Jump to Abort': true,
-  'Auto unfold listing entries treshold': 10,
-  'Only auto unfold display statements': true,
-  'Default parameter to jump to after solve': 'gamsParameter',
-  'Multi-file entry point': 'my_model.gms',
-  'Command Line Arguments - Compilation': ['--myArg=3','--myOtherArg5'],
-  'Command Line Arguments - Execution': ['--myArg=3','--myOtherArg5'],
-  'Parse symbol values': false,
-  'Console limrow': 3,
-  'Console limcol': 3,
-  'Console dispWidth': 15
+  "Gams Executable": "String",
+  "Scratch directory": "String",
+  "Jump to Abort": true,
+  "Auto unfold listing entries treshold": 10,
+  "Only auto unfold display statements": true,
+  "Default parameter to jump to after solve": "gamsParameter",
+  "Multi-file entry point": "my_model.gms",
+  "Command Line Arguments - Compilation": ["--myArg=3","--myOtherArg5"],
+  "Command Line Arguments - Execution": ["--myArg=3","--myOtherArg5"],
+  "Parse symbol values": false,
+  "Console limrow": 3,
+  "Console limcol": 3,
+  "Console dispWidth": 15
 }
 ```
 

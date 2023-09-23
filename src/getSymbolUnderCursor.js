@@ -1,3 +1,5 @@
+const vscode = require("vscode");
+
 module.exports = async function getSymbolUnderCursor(args) {
   const {
     event, 
@@ -29,7 +31,7 @@ module.exports = async function getSymbolUnderCursor(args) {
 
     // find the word in the reference tree
     const referenceTree = state.get("referenceTree");
-    const solves = state.get("solves")
+    const solves = state.get("solves")    
     const matchingRef = referenceTree?.find((item) => item.name?.toLowerCase() === word?.toLowerCase());
     const position = editor.selection.active;
     const line = position.line;
@@ -68,7 +70,9 @@ module.exports = async function getSymbolUnderCursor(args) {
     //if (vscode.window.state.focused) {
     //   terminal_symbols.show(true);
     //}
-    if (matchingRef && gamsSymbolView) {
+    // only update symbol view if it enabled in the settings
+    const isSymbolParsingEnabled = vscode.workspace.getConfiguration("gamsIde").get("parseSymbolValues");
+    if (matchingRef && gamsSymbolView && isSymbolParsingEnabled) {      
       gamsSymbolView.webview.postMessage({
         command: "updateSolveData",
         data: {
@@ -77,7 +81,7 @@ module.exports = async function getSymbolUnderCursor(args) {
           data: matchingRef.data
         },
       });
-    } else if (gamsSymbolView) {
+    } else if (gamsSymbolView && isSymbolParsingEnabled) {
       gamsSymbolView.webview.postMessage({
         command: "updateSymbolError",
         data: {

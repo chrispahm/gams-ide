@@ -30,17 +30,57 @@ async function listenToLstFiles(args) {
         lstTree: ast
       }
     });
-    
+
     // Get the end position of the document
     const endPosition = document.lineAt(document.lineCount - 1).range.end;
 
-    // Show the document in the editor and scroll to the end position
-    const options = {
-      selection: new vscode.Range(endPosition, endPosition),
-      preview: true,
-      revealType: vscode.TextEditorRevealType.InCenterIfOutsideViewport
-    };
-    vscode.window.showTextDocument(document, options);
+    // if the jump to abort setting is enabled, find the abort statement in the ast
+    // and jump to it
+    const isJumpToAbortEnabled = vscode.workspace.getConfiguration("gamsIde").get("jumpToAbort");
+    if (isJumpToAbortEnabled) {
+      const abortStatement = ast.find(node => node.type === "Abort");
+      if (abortStatement) {
+        console.log(abortStatement);
+        
+        const abortPosition = new vscode.Position(abortStatement.line[0] - 1, abortStatement.column[0]);
+        const options = {
+          selection: new vscode.Range(abortPosition, abortPosition),
+          preview: true,
+          revealType: vscode.TextEditorRevealType.InCenterIfOutsideViewport
+        };
+        vscode.window.showTextDocument(document, options);
+        return;
+      }
+    }
+    // next, check if a default parameter to jump to is set
+    const jumpTo = vscode.workspace.getConfiguration("gamsIde").get("defaultParameterToJumpToAfterSolve");
+    if (jumpTo) {
+      // find the parameter in the ast
+      console.log(jumpTo, ast);
+      
+      const jumpToParameter = ast.flatMap(node => node?.entries).findLast(entry => entry?.name === jumpTo);
+      if (jumpToParameter) {
+        const jumpToPosition = new vscode.Position(jumpToParameter.line - 1, jumpToParameter.column);
+        const options = {
+          selection: new vscode.Range(jumpToPosition, jumpToPosition),
+          preview: true,
+          revealType: vscode.TextEditorRevealType.InCenterIfOutsideViewport
+        };
+        vscode.window.showTextDocument(document, options);
+        return;
+      }
+    }
+    const autoScroll = vscode.workspace.getConfiguration("gamsIde").get("autoScrollToEndOfListing");
+    if (autoScroll) {
+      // Default: jump to the end of the document
+      // Show the document in the editor and scroll to the end position
+      const options = {
+        selection: new vscode.Range(endPosition, endPosition),
+        preview: true,
+        revealType: vscode.TextEditorRevealType.InCenterIfOutsideViewport
+      };
+      vscode.window.showTextDocument(document, options);
+    }
   }
 }
 

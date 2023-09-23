@@ -6,7 +6,7 @@ const os = require('os');
 module.exports = async function getGamsPath() {
   const defaultSettings = vscode.workspace.getConfiguration("gamsIde");
   let gamsExecutable = defaultSettings.get("gamsExecutable");
-
+  
   // if there is no gamsExecutable, try to find it in the PATH
   if (!gamsExecutable) {
     const gamsPath = which('gams')
@@ -60,5 +60,6 @@ module.exports = async function getGamsPath() {
   if (!gamsExecutable) {
     vscode.window.showErrorMessage('Could not find GAMS executable. Please set the path to the GAMS executable in the settings.')
   }
+  
   return gamsExecutable
 }

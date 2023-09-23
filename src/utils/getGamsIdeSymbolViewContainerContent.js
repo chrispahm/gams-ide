@@ -1,5 +1,5 @@
 module.exports = function getGamsIdeSymbolViewContainerContent(options) {
-  const { webviewToolkitUri, codiconsUri } = options;
+  const { webviewToolkitUri, codiconsUri, isSymbolParsingEnabled } = options;
 
   return `
   <!DOCTYPE html>
@@ -37,6 +37,14 @@ module.exports = function getGamsIdeSymbolViewContainerContent(options) {
       line-height: normal;
       margin-bottom: 2px;
     }
+
+    .link {
+      color: var(--vscode-textLink-foreground);
+      cursor: pointer;
+    }
+    .link:hover {
+      text-decoration: underline;
+    }
   </style>
   <body>
     <div class="dropdown-container">
@@ -44,7 +52,9 @@ module.exports = function getGamsIdeSymbolViewContainerContent(options) {
       <vscode-dropdown id="gams-symbols-dropdown">
       </vscode-dropdown>
     </div>
-    <pre id="gams-symbols-content" style="padding: 40px 0px;"></pre>
+    <pre id="gams-symbols-content" style="padding: 40px 0px;">
+      ${ !isSymbolParsingEnabled ? "Symbol parsing is disabled. <a class='link' onclick='enableSymbolParsing()'>Click here to enable it.</a>" : "No data to show. Click on a symbol to get started!" }
+    </pre>
   </body>
   <script type="module">
     const vscode = acquireVsCodeApi();
@@ -58,17 +68,37 @@ module.exports = function getGamsIdeSymbolViewContainerContent(options) {
       vsCodeDropdown(), 
       vsCodeOption()
     );
-    let currentSolve = '';
+    // let currentSolve = {
+    //   model: "Compile time",
+    //   line: 0
+    // };
+    let currentSolve = "";
+    // let solves = [{
+    //   model: "Compile time",
+    //   line: 0
+    // }];
     let solves = [];
     let data = {};
 
     const dropdown = document.getElementById('gams-symbols-dropdown');
     const content = document.getElementById('gams-symbols-content');
 
+    window.enableSymbolParsing = function() {
+      vscode.postMessage({
+        command: 'enableSymbolParsing'
+      });
+    }
     // Handle messages sent from the extension to the webview
     window.addEventListener('message', event => {
       const message = event.data; // The json data that the extension sent
       switch (message.command) {
+        case 'isSymbolParsingEnabled':
+          if (message.data.isSymbolParsingEnabled) {
+            content.innerHTML = "No data to show. Click on a symbol to get started!";
+          } else {
+            content.innerHTML = "Symbol parsing is disabled. <a class='link' onclick='enableSymbolParsing()'>Click here to enable it.</a>";
+          }
+          break;
         case 'updateSymbolError':
           // delete all options of the dropdown
           while (dropdown.firstChild) {
@@ -103,7 +133,7 @@ module.exports = function getGamsIdeSymbolViewContainerContent(options) {
               // select current option
               option.setAttribute('selected', true)
               // update content
-              content.innerHTML = message.data.data?.["line_" + solve.line];
+              content.innerHTML = message.data.data?.["line_" + solve.line] || "No data available for this solve statement.";
             });
             // set option selected or not
             if (currentSolve.model === solve.model && currentSolve.line === solve.line) {

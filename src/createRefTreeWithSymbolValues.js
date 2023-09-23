@@ -15,6 +15,10 @@ module.exports = async function createRefTreeWithSymbolValues(options) {
   
   const referenceTree = state.get("referenceTree");
   // reset gamsSolve state
+  // state.update("solves", [{
+  //   model: "Compile time",
+  //   line: 0
+  // }]);
   state.update("solves", []);
   const solvesStore = state.get("solves");
   
@@ -25,7 +29,12 @@ module.exports = async function createRefTreeWithSymbolValues(options) {
   
   const lst = await execDMP(dumpFile, { scratchdir, gamsexe });
   
-  await getData(lst, solves, solvesStore, referenceTree);
+  try {
+    await getData(lst, solves, solvesStore, referenceTree);
+  } catch (error) {
+    throw error
+  }
+  
   // save new data in store
   state.update("solves", solvesStore);
   state.update("referenceTree", referenceTree);
@@ -89,6 +98,8 @@ function parseDMP(file, config, referenceTree) {
         solves
       })
     })
+
+    rl.on('error', reject)
   })
 }
 
@@ -97,12 +108,17 @@ function execDMP(dumpFile, config) {
     const gamsParams = config.gamsexe + ' "' + dumpFile.path + '" suppress=1 pageWidth=80 pageSize=0 lo=3 resLim=0 -scrdir="' + config.scratchdir + '" '
     shell.cd(config.scratchdir)
     
-    shell.exec(gamsParams, {silent: true}, () => {
+    shell.exec(gamsParams, {silent: true}, (code, stdout, stderr) => {
+      if (code !== 0) {
+        console.log('Error in dmp exec: ' + stdout, stderr)
+        // reject(stderr)
+      }
       fs.unlink(dumpFile.path, (err) => {
         if (err) throw err
       })      
       resolve(`${config.scratchdir}${path.sep}${path.basename(dumpFile.path, '.gms')}.lst`)
     })
+
   })
 }
 
@@ -113,7 +129,7 @@ function getData(lst, solves, gamsSolves, referenceTree) {
       input: stream,
       crlfDelay: Infinity
     })
-    let curSym, curData, curSection, curSolve
+    let curSym, curData, curSection, curSolve, foundError
 
     function save(solve, symbol, data) {
       // save solve
@@ -186,10 +202,12 @@ function getData(lst, solves, gamsSolves, referenceTree) {
         }
       }
       // abort if compilation errors
-      else if (line.includes('Error Messages')) {
-        console.log('Compilation error')
-        rl.close()
-        stream.destroy()
+      else if (line.includes('Error Messages') || line.includes('**** USER ERROR(S) ENCOUNTERED')) {
+        // rl.close()
+        // stream.destroy()
+        console.log('Compilation error in DMP lst file', lst);
+        foundError = true
+        reject("Compilation error in DMP lst file")
       }
       // anything else
       else if (/^(\*\*\*\*)\s*\d/.test(line) || /^(GAMS)/.test(line) || line.includes("G e n e r a l") || /^(Range Statistics)/.test(line) || /^(RANGE STATISTICS)/.test(line) ) {
@@ -200,10 +218,14 @@ function getData(lst, solves, gamsSolves, referenceTree) {
     })
 
     rl.on('close', () => {
+      if (foundError) return
+      console.log('close and unlink', lst);
       fs.unlink(lst, (err) => {
         if (err) throw err
       })
       resolve()
     })
+
+    rl.on('error', reject)
   })
 }

@@ -284,6 +284,7 @@ https://cdn.jsdelivr.net/npm/simple-undo@1.0.2/lib/simple-undo.min.js
               this.lstTreeOrig = message.data.lstTree;
               break;
             case 'updateReference':
+              if (this.locked) return;
               const keys = [
                 "name",
                 "nameLo",
@@ -357,6 +358,9 @@ https://cdn.jsdelivr.net/npm/simple-undo@1.0.2/lib/simple-undo.min.js
         this.locked = !this.locked;
       },
       updateSymbol(options) {
+        // return early if locked
+        if (this.locked) return;
+
         const {
           name,
           fuzzy = false,

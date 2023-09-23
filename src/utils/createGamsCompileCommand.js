@@ -1,5 +1,6 @@
 const vscode = require("vscode");
 const { resolve, basename, dirname, parse, sep, format } = require('path');
+const fs = require("fs");
 const getGamsPath = require('./getGamsPath.js')
 
 module.exports = async function createGamsCommand(document, extraArgs = []) {
@@ -19,13 +20,22 @@ module.exports = async function createGamsCommand(document, extraArgs = []) {
   // this extension's scratch directory
   if (!scratchDirectory) {
     scratchDirectory = resolve(__dirname + '/../scrdir');
+    // check if the scratch directory exists, if not, create it
+    if (!fs.existsSync(scratchDirectory)) {
+      try {
+        fs.mkdirSync(scratchDirectory);
+      } catch (error) {
+        console.log(error);
+        vscode.window.showErrorMessage(error.message);
+      }
+    }
   }
 
   // check if there is a .gams-ide-settings.json file in the same folder, or in a parent folder
   let settingsFiles = [];
 
   if (vscode.workspace.workspaceFolders && vscode.workspace.workspaceFolders.length) {
-    const pattern = new vscode.RelativePattern(vscode.workspace.workspaceFolders[0], `**/.gams-ide-settings.json`);
+    const pattern = new vscode.RelativePattern(vscode.workspace.workspaceFolders[0], `**/gams-ide-settings.json`);
     settingsFiles = await vscode.workspace.findFiles(pattern);
   }
   // check if a settingsFile exists, if so, read the seetings 
@@ -33,7 +43,7 @@ module.exports = async function createGamsCommand(document, extraArgs = []) {
   // and "Command Line Arguments - Execution"
   // and use them to compile and execute the GAMS file
   if (settingsFiles?.length > 0) {
-    const settings = require(settingsFiles[0].fsPath);
+    const settings = JSON.parse(fs.readFileSync(settingsFiles[0].fsPath, 'utf8'));
     gamsExecutable = settings["Gams Executable"] || gamsExecutable;
     scratchDirectory = settings["Scratch directory"] || scratchDirectory;
     multiFileEntryPoint = settings["Multi-file entry point"] || multiFileEntryPoint;
@@ -70,7 +80,6 @@ module.exports = async function createGamsCommand(document, extraArgs = []) {
   }
 
   let gamsFileToExecute = document.fileName;
-  console.log(gamsFileToExecute, multiFileEntryPointFile);
   
   if (multiFileEntryPointFile) {
     gamsFileToExecute = multiFileEntryPointFile;

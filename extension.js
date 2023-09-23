@@ -28,7 +28,7 @@ async function activate(context) {
     const document = vscode.window.activeTextEditor.document;
     // check if the active editor is a GAMS file
     if (document.languageId === "gams") {
-      await updateDiagnostics({ document, collection, gamsSymbolView, state });
+      await updateDiagnostics({ document, collection, gamsSymbolView, state, terminal });
     } else if (document.fileName.toLowerCase().endsWith('.lst')) {
       await debouncedListenToLstFiles({
         document,
@@ -48,7 +48,8 @@ async function activate(context) {
           document: editor.document,
           collection,
           gamsSymbolView,
-          state
+          state,
+          terminal
         });
       } else if (editor && editor.document.fileName.toLowerCase().endsWith('.lst')) {
         isListing = true;
@@ -75,7 +76,7 @@ async function activate(context) {
   context.subscriptions.push(
     vscode.workspace.onDidSaveTextDocument(async (document) => {
       if (document && document.languageId === "gams") {
-        await updateDiagnostics({ document, collection, gamsSymbolView, state });
+        await updateDiagnostics({ document, collection, gamsSymbolView, state, terminal });
       }
     })
   );
@@ -92,6 +93,18 @@ async function activate(context) {
   // register a command to execute a GAMS file
   context.subscriptions.push(
     vscode.commands.registerCommand("gams.run", () => runGams(terminal))
+  );
+
+  context.subscriptions.push(
+    vscode.commands.registerCommand("gams.runThisFile", () => runGams(terminal, false, true))
+  );
+
+  context.subscriptions.push(
+    vscode.commands.registerCommand("gams.compile", () => runGams(terminal, true))
+  );
+
+  context.subscriptions.push(
+    vscode.commands.registerCommand("gams.compileThisFile", () => runGams(terminal, true, true))
   );
 
   // add a listener to all .lst files, that scrolls to the bottom of the file 
@@ -210,6 +223,7 @@ async function activate(context) {
         undefined,
         context.subscriptions
       );
+        
     }
   })
   context.subscriptions.push(gamsView);
@@ -241,76 +255,65 @@ async function activate(context) {
         // Set the webview content
         webviewView.webview.html = getGamsIdeSymbolViewContainerContent({
           webviewToolkitUri,
-          codiconsUri
+          codiconsUri,
+          isSymbolParsingEnabled: vscode.workspace.getConfiguration("gamsIde").get("parseSymbolValues")
+        });
+
+        webviewView.webview.onDidReceiveMessage(async message => {
+          switch (message.command) {
+            case 'enableSymbolParsing':
+              vscode.workspace.getConfiguration("gamsIde").update("parseSymbolValues", true);
+              break;
+          }
         });
       }
     }
   }
   // add the gams symbol view if enabled
   let showSymbolViewCommandDisposable, gamsSymbolViewDisposable;
-  if (vscode.workspace.getConfiguration("gamsIde").get("parseSymbolValues")) {
-    // create the gams symbol view
-    gamsSymbolViewDisposable = vscode.window.registerWebviewViewProvider('gamsIdeSymbolView', createGamsSymbolView())
-    context.subscriptions.push(gamsSymbolViewDisposable);
+  // create the gams symbol view
+  gamsSymbolViewDisposable = vscode.window.registerWebviewViewProvider('gamsIdeSymbolView', createGamsSymbolView())
+  context.subscriptions.push(gamsSymbolViewDisposable);
 
-    // add a command to open the gams symbol view sidebar
-    showSymbolViewCommandDisposable = vscode.commands.registerCommand("gams.openSymbolPanel", () => {
-      // make sure the bottom panel is open
-      vscode.commands.executeCommand("workbench.action.togglePanel");
-      gamsSymbolView?.show();
-    })
-  } else {
-    showSymbolViewCommandDisposable = vscode.commands.registerCommand("gams.openSymbolPanel", () => {
-      // show a warning in the active editor that the symbol view is disabled,
-      // link to the settings
-      vscode.window.showWarningMessage("Parsing GAMS symbols is currently disabled. You can enable it in the settings.", "Open Settings").then((selection) => {
-        if (selection === "Open Settings") {
-          vscode.commands.executeCommand("workbench.action.openSettings", "gamsIde.parseSymbolValues");
+  // add a command to open the gams symbol view sidebar
+  showSymbolViewCommandDisposable = vscode.commands.registerCommand("gams.openSymbolPanel", () => {
+    // make sure the bottom panel is open
+    vscode.commands.executeCommand("workbench.action.togglePanel");
+    // check if parsing symbols is enabled
+    if (!vscode.workspace.getConfiguration("gamsIde").get("parseSymbolValues")) {
+      vscode.window.showErrorMessage("Symbol parsing is disabled.", "Enable symbol parsing").then((value) => {
+        if (value === "Enable symbol parsing") {
+          vscode.workspace.getConfiguration("gamsIde").update("parseSymbolValues", true);
         }
       });
-    });
-  }
+    } else {
+      gamsSymbolView?.show();
+    }
+  })
+
   context.subscriptions.push(showSymbolViewCommandDisposable);
 
-  // liste to changes to the parseSymbolValues setting
+  // listen to changes to the parseSymbolValues setting
   vscode.workspace.onDidChangeConfiguration((e) => {
-    if (e.affectsConfiguration("gamsIde.parseSymbolValues")) {
-      if (vscode.workspace.getConfiguration("gamsIde").get("parseSymbolValues")) {
-        // dispose the old gams symbol view if it exists
-        gamsSymbolViewDisposable?.dispose();
-        gamsSymbolViewDisposable = vscode.window.registerWebviewViewProvider('gamsIdeSymbolView', createGamsSymbolView())
-        context.subscriptions.push(gamsSymbolView);
-        // update command to open the gams symbol view sidebar
-        showSymbolViewCommandDisposable.dispose();
-        console.log("disposed showSymbolViewCommandDisposable");
-        
-        showSymbolViewCommandDisposable = vscode.commands.registerCommand("gams.openSymbolPanel", () => {
-          // make sure the bottom panel is open
-          vscode.commands.executeCommand("workbench.action.togglePanel");
-          gamsSymbolView?.show();
-        });
-        context.subscriptions.push(showSymbolViewCommandDisposable);
-      } else {
-        gamsSymbolView.dispose();
-        // gamsSymbolViewDisposable?.dispose();        
-        console.log("disposed gamsSymbolView", gamsSymbolView);
-        gamsSymbolView = undefined;
-        // update command to open the gams symbol view sidebar
-        showSymbolViewCommandDisposable.dispose();
-        showSymbolViewCommandDisposable = vscode.commands.registerCommand("gams.openSymbolPanel", () => {
-          // show a warning in the active editor that the symbol view is disabled,
-          // link to the settings
-          vscode.window.showWarningMessage("Parsing GAMS symbols is currently disabled. You can enable it in the settings.", "Open Settings").then((selection) => {
-            if (selection === "Open Settings") {
-              vscode.commands.executeCommand("workbench.action.openSettings", "gamsIde.parseSymbolValues");
-            }
-          });
-        });
-        context.subscriptions.push(showSymbolViewCommandDisposable);
+    if (e.affectsConfiguration("gamsIde.parseSymbolValues")) {      
+      // send a message to the symbol view to update the content
+      const isSymbolParsingEnabled = vscode.workspace.getConfiguration("gamsIde").get("parseSymbolValues");
+      gamsSymbolView?.webview.postMessage({
+        command: "isSymbolParsingEnabled",
+        data: {
+          isSymbolParsingEnabled
+        }
+      });
+
+      if (isSymbolParsingEnabled) {
+        // re-run diagnostics so that the symbol view is updated
+        const editor = vscode.window.activeTextEditor;
+        if (editor && editor.document.languageId === "gams") {
+          updateDiagnostics({ document: editor.document, collection, gamsSymbolView, state, terminal });
+        }
       }
     }
   });
-
 }
 
 // this method is called when your extension is deactivated

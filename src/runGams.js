@@ -7,11 +7,11 @@ async function openListing(listingPath) {
   vscode.window.showTextDocument(doc);
 }
 
-module.exports = async function runGams(terminal) {
+module.exports = async function runGams(terminal, compileOnly = false, ignoreMultiFileEntryPoint = false) {
   const editor = vscode.window.activeTextEditor;
   if (editor && editor.document.languageId === "gams") {
     const document = editor.document;
-    const gamsCommand = await createGamsCommand(document, ["lo=3", "dumpopt=11"]);
+    const gamsCommand = await createGamsCommand(document, ["lo=3", compileOnly ? "a=c" : ""], ignoreMultiFileEntryPoint);
     // if the terminal has been closed, create a new one
     if (terminal.exitStatus !== undefined) {
       terminal = vscode.window.createTerminal("GAMS");
