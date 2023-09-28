@@ -48,11 +48,11 @@ module.exports = async function updateDiagnostics(args) {
       return;
     } else if (res.error) {
       // show error in VS Code output
-      vscode.window.showErrorMessage("GAMS compilation failed: Check the GAMS output in the terminal");
-      terminal?.show(true);
-      terminal?.sendText(command);
+      // vscode.window.showErrorMessage("GAMS compilation failed: Check the GAMS output in the terminal");
+      // terminal?.show(true);
+      // terminal?.sendText(command);
       console.log("error", res.error);
-      return;
+      // return;
     }
     const stdout = res.stdout;
     const stderr = res.stderr;
