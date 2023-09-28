@@ -6,7 +6,6 @@ const parseError = require("./utils/parseError.js");
 const createRefTree = require("./utils/createRefTree.js");
 const createGamsCompileCommand = require("./utils/createGamsCompileCommand.js");
 // const gdx = require('node-gdx')();
-const { table } = require('table');
 const createRefTreeWithSymbolValues = require("./createRefTreeWithSymbolValues.js");
 
 function execAsync(command) {
@@ -25,13 +24,14 @@ module.exports = async function updateDiagnostics(args) {
     terminal
   } = args;
 
+  const shouldParseSymbolValues = vscode.workspace.getConfiguration("gamsIde").get("parseSymbolValues")
+
   if (document && collection) {
     // get the compile statement for the current document
-    const compileCommand = await createGamsCompileCommand(document, ["dumpopt=11"]);
-    console.log("compileCommand", compileCommand);
-    
+    const compileCommand = await createGamsCompileCommand(document, [shouldParseSymbolValues ? "dumpopt=11" : ""]);
     // run the compile command
     const command = `${compileCommand.gamsExe} ${compileCommand.gamsArgs.join(" ")}`;
+    console.log("compileCommand", compileCommand, command);
     let res
     try {
       // run the compile command      
@@ -53,7 +53,7 @@ module.exports = async function updateDiagnostics(args) {
       // vscode.window.showErrorMessage("GAMS compilation failed: Check the GAMS output in the terminal");
       // terminal?.show(true);
       // terminal?.sendText(command);
-      console.log("error", res.error);
+      // console.log("error", res.error);
       // return;
     }
     const stdout = res.stdout;
@@ -70,7 +70,7 @@ module.exports = async function updateDiagnostics(args) {
       if (errorFileContents.split(/\n/).length <= 2) {
         collection.clear();
         // only parse symbol values if the according setting is enabled
-        if (vscode.workspace.getConfiguration("gamsIde").get("parseSymbolValues")) {
+        if (shouldParseSymbolValues) {
           // and the gdx smybol container
           // we mutate the  reference tree with symbol values, and explicitly do not await
           // this potentially long-running process in order to return the diagnostic
