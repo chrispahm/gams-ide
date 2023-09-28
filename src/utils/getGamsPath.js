@@ -12,6 +12,15 @@ module.exports = async function getGamsPath() {
     const gamsPath = which('gams')
     if (gamsPath) {
       gamsExecutable = gamsPath
+      // update the workspace settings
+      vscode.workspace.getConfiguration().update("gamsIde.gamsExecutable", gamsExecutable, vscode.ConfigurationTarget.Workspace);
+      // show info message, with button to open settings
+      const openSettings = 'Open Settings';
+      vscode.window.showInformationMessage(`Found GAMS executable at ${gamsExecutable}, now stored in workspace settings.`, openSettings).then(selection => {
+        if (selection === openSettings) {
+          vscode.commands.executeCommand('workbench.action.openSettings', '@ext:GAMS.gams-ide gamsExecutable');
+        }
+      });
     }
   }
   
@@ -55,11 +64,30 @@ module.exports = async function getGamsPath() {
     } else if (os.platform() === 'linux') {
       gamsExecutable = '/opt/gams/gams24.8_linux_x64_64_sfx'
     }
+    if (gamsExecutable) {
+      vscode.workspace.getConfiguration().update("gamsIde.gamsExecutable", gamsExecutable, vscode.ConfigurationTarget.Workspace);
+      // show info message, with button to open settings
+      const openSettings = 'Open Settings';
+      vscode.window.showInformationMessage(`Found GAMS executable at ${gamsExecutable}, now stored in workspace settings.`, openSettings).then(selection => {
+        if (selection === openSettings) {
+          vscode.commands.executeCommand('workbench.action.openSettings', '@ext:GAMS.gams-ide gamsExecutable');
+        }
+      });
+
+    }
   }
 
   if (!gamsExecutable) {
-    vscode.window.showErrorMessage('Could not find GAMS executable. Please set the path to the GAMS executable in the settings.')
+    // show error message and button with link to settings
+    const openSettings = 'Open Settings';
+    vscode.window.showErrorMessage(`GAMS executable not found. Please update the workspace settings.`, openSettings).then(selection => {
+      if (selection === openSettings) {
+        vscode.commands.executeCommand('workbench.action.openSettings', '@ext:GAMS.gams-ide gamsExecutable');
+      }
+    });
   }
+  
+  console.log("gamsExecutable", gamsExecutable);
   
   return gamsExecutable
 }

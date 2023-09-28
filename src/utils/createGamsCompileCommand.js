@@ -1,5 +1,5 @@
 const vscode = require("vscode");
-const { resolve, basename, dirname, parse, sep, format } = require('path');
+const { resolve, basename, dirname, parse, sep, isAbsolute } = require('path');
 const fs = require("fs");
 const getGamsPath = require('./getGamsPath.js')
 
@@ -43,6 +43,8 @@ module.exports = async function createGamsCommand(document, extraArgs = []) {
   // and "Command Line Arguments - Execution"
   // and use them to compile and execute the GAMS file
   if (settingsFiles?.length > 0) {
+    console.log('settingsFiles', settingsFiles);
+    
     const settings = JSON.parse(fs.readFileSync(settingsFiles[0].fsPath, 'utf8'));
     gamsExecutable = settings["Gams Executable"] || gamsExecutable;
     scratchDirectory = settings["Scratch directory"] || scratchDirectory;
@@ -51,31 +53,52 @@ module.exports = async function createGamsCommand(document, extraArgs = []) {
   }
 
   // if a multi-file entry point is specified, we try to find the file in the workspace
+  console.log('multiFileEntryPoint', multiFileEntryPoint);
+  
   if (multiFileEntryPoint && vscode.workspace.workspaceFolders && vscode.workspace.workspaceFolders.length) {
-    const pattern = new vscode.RelativePattern(vscode.workspace.workspaceFolders[0], `**/${multiFileEntryPoint}`);
-    const files = await vscode.workspace.findFiles(pattern);
-    
-    if (files && files.length > 0) {
-      multiFileEntryPointFile = files[0].fsPath;
-      // overwrite the file name and path with the multi-file entry point
-      fileName = basename(multiFileEntryPointFile);
-      filePath = dirname(multiFileEntryPointFile);
-      // add specific command line arguments for multi-file execution
-      // for known GAMS Models
-      const gamsFile = parse(multiFileEntryPointFile).base
-      if (gamsFile === 'exp_starter.gms') {
-        commandLineArguments = commandLineArguments.concat(
-          [`-scrdir="${scratchDirectory}" optdir=opt --scen=incgen/runInc`]
-        )
-      } else if (gamsFile === 'capmod.gms') {
-        commandLineArguments = commandLineArguments.concat(
-          [`-scrdir="${scratchDirectory}" --scen=fortran`]
-        )
-      } else if (gamsFile === 'com_.gms') {
-        commandLineArguments = commandLineArguments.concat(
-          [`-procDirPath="${scratchDirectory}" --scen=com_inc --task="Simulation" --scrdir="${scratchDirectory}" optdir=opt`]
-        )
+    // check if multi-file entry point is a an absolute path
+    if (!isAbsolute(multiFileEntryPoint)) {
+      // if not, we have to find the absolute path using glob and update the workspace settings accordingly
+      const pattern = new vscode.RelativePattern(vscode.workspace.workspaceFolders[0], `**/${multiFileEntryPoint}`);
+      const files = await vscode.workspace.findFiles(pattern);
+
+      if (files && files.length > 0) {
+        multiFileEntryPointFile = files[0].fsPath;
+        // update the workspace settings
+        vscode.workspace.getConfiguration().update("gamsIde.multi_fileEntryPoint", multiFileEntryPointFile, vscode.ConfigurationTarget.Workspace);
+      } else {
+        // Show error message and button with link to settings
+        const openSettings = 'Open Settings';
+        const removeMultiFileEntry = 'Remove multi-file entry point';
+        await vscode.window.showErrorMessage(`Multi-file entry point ${multiFileEntryPoint} not found in workspace. Please update the workspace settings, or disable multi-file entry point.`, openSettings).then(selection => {
+          if (selection === openSettings) {
+            vscode.commands.executeCommand('workbench.action.openSettings', '@ext:GAMS.gams-ide multi_fileEntryPoint');
+          } else if (selection === removeMultiFileEntry) {
+            vscode.workspace.getConfiguration().update("gamsIde.multi_fileEntryPoint", "", vscode.ConfigurationTarget.Workspace);
+          }
+        });
       }
+    }
+    multiFileEntryPointFile = multiFileEntryPoint;
+    // overwrite the file name and path with the multi-file entry point    
+    fileName = basename(multiFileEntryPointFile);
+    filePath = dirname(multiFileEntryPointFile);
+    // add specific command line arguments for multi-file execution
+    // for known GAMS Models
+    const gamsFile = parse(multiFileEntryPointFile).base
+    
+    if (gamsFile === 'exp_starter.gms') {
+      commandLineArguments = commandLineArguments.concat(
+        [`--scen=incgen${sep}runInc`, '--ggig=on', '--baseBreed=falsemyBasBreed']
+      )
+    } else if (gamsFile === 'capmod.gms') {
+      commandLineArguments = commandLineArguments.concat(
+        [`-scrdir="${scratchDirectory}"`, '--scen=fortran']
+      )
+    } else if (gamsFile === 'com_.gms') {
+      commandLineArguments = commandLineArguments.concat(
+        [`-procdirpath="${scratchDirectory}"`, '--scen=com_inc']
+      )
     }
   }
 

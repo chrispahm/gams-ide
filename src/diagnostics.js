@@ -28,6 +28,8 @@ module.exports = async function updateDiagnostics(args) {
   if (document && collection) {
     // get the compile statement for the current document
     const compileCommand = await createGamsCompileCommand(document, ["dumpopt=11"]);
+    console.log("compileCommand", compileCommand);
+    
     // run the compile command
     const command = `${compileCommand.gamsExe} ${compileCommand.gamsArgs.join(" ")}`;
     let res
@@ -142,7 +144,7 @@ module.exports = async function updateDiagnostics(args) {
       // open the Problems tab, and jump to the first error
       // if the user has the setting enabled
       // if (vscode.workspace.getConfiguration("gams").get("openProblemsTabOnCompile")) {
-      vscode.commands.executeCommand("workbench.panel.markers.view.focus");
+      // vscode.commands.executeCommand("workbench.panel.markers.view.focus");
       if (errorMessages.length) {
         /*
         const firstError = errorMessages[0];
@@ -175,7 +177,7 @@ module.exports = async function updateDiagnostics(args) {
           }
         });
       } else {
-        vscode.window.showErrorMessage("GAMS compilation failed! Check the GAMS output in the terminal");
+        vscode.window.showErrorMessage("GAMS compilation failed! Check the GAMS output in the terminal. Stdout:" + stdout, );
         // focus on the terminal, and send the gams command to the terminal
         terminal?.show(true);
         terminal?.sendText(command);

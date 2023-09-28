@@ -58,7 +58,7 @@ async function listenToLstFiles(args) {
       // find the parameter in the ast
       console.log(jumpTo, ast);
       
-      const jumpToParameter = ast.flatMap(node => node?.entries).findLast(entry => entry?.name === jumpTo);
+      const jumpToParameter = ast.flatMap(node => node?.entries).findLast(entry => entry?.name?.toLowerCase() === jumpTo.toLowerCase());
       if (jumpToParameter) {
         const jumpToPosition = new vscode.Position(jumpToParameter.line - 1, jumpToParameter.column);
         const options = {
