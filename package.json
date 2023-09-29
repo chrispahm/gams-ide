@@ -2,7 +2,7 @@
   "name": "gams-ide",
   "displayName": "gams-ide",
   "description": "A GAMS integrated development environment for vscode",
-  "version": "0.0.41",
+  "version": "0.0.42",
   "repository": {
     "type": "git",
     "url": "https://github.com/chrispahm/gams-ide"
@@ -193,8 +193,7 @@
     "glob": "^10.2.7",
     "lodash": "^4.17.21",
     "readline-specific": "^1.0.4",
-    "shelljs": "^0.8.5",
-    "table": "^6.8.1"
+    "shelljs": "^0.8.5"
   },
   "extensionDependencies": [
     "lolow.gams"
