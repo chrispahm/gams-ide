@@ -1,8 +1,9 @@
 const vscode = require("vscode");
+const gamsParser = require('./utils/gamsParser.js');
 
 module.exports = async function getSymbolUnderCursor(args) {
   const {
-    event, 
+    event,
     gamsSymbolView,
     state,
     gamsView
@@ -31,13 +32,37 @@ module.exports = async function getSymbolUnderCursor(args) {
 
     // find the word in the reference tree
     const referenceTree = state.get("referenceTree");
-    const solves = state.get("solves")    
-    const matchingRef = referenceTree?.find((item) => item.name?.toLowerCase() === word?.toLowerCase());
-    const position = editor.selection.active;
+    const solves = state.get("solves")
+    let matchingRef = referenceTree?.find((item) => item.name?.toLowerCase() === word?.toLowerCase());
+    // const position = editor.selection.active;
     const line = position.line;
     const column = position.character;
     const file = document.fileName;
 
+    if (!matchingRef) {
+      // parse the line using the PEG parser
+      try {
+        console.log('line.text', document.lineAt(line));
+        const { text: lineText } = document.lineAt(line);
+        const ast = gamsParser.parse(lineText);
+        console.log('ast', ast);
+
+        const gamsSymbol = ast.find((functionCall) => functionCall.args?.find(
+          (arg) => arg?.name?.toLowerCase().includes(word?.toLowerCase())
+            && arg.location.start.column <= column
+            && arg.location.end.column >= column
+        ));
+        const argIndex = gamsSymbol?.args?.findIndex(
+          (arg) => arg?.name?.toLowerCase().includes(word?.toLowerCase())
+            && arg.location.start.column <= column
+            && arg.location.end.column >= column
+        );
+        matchingRef = referenceTree?.find((item) => item.name?.toLowerCase() === gamsSymbol?.name?.toLowerCase());
+        matchingRef = matchingRef.domain[argIndex]
+      } catch (error) {
+        console.log("Error finding quoted string in GAMS symbols: ", error);
+      }
+    }
     if (matchingRef && gamsView) {
       state.update("curSymbol", {
         ...matchingRef,
@@ -49,8 +74,8 @@ module.exports = async function getSymbolUnderCursor(args) {
       gamsView.webview.postMessage({
         command: "updateReference",
         data: {
-          ...matchingRef, 
-          historyCursorFile: file, 
+          ...matchingRef,
+          historyCursorFile: file,
           historyCursorLine: line,
           historyCursorColumn: column
         },
@@ -72,7 +97,7 @@ module.exports = async function getSymbolUnderCursor(args) {
     //}
     // only update symbol view if it enabled in the settings
     const isSymbolParsingEnabled = vscode.workspace.getConfiguration("gamsIde").get("parseSymbolValues");
-    if (matchingRef && gamsSymbolView && isSymbolParsingEnabled) {      
+    if (matchingRef && gamsSymbolView && isSymbolParsingEnabled) {
       gamsSymbolView.webview.postMessage({
         command: "updateSolveData",
         data: {
