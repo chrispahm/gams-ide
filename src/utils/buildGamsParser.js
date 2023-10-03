@@ -16,19 +16,41 @@ input
 
 functionCall
   = name:identifier "(" args:argumentList ")" {
-    return {type: "functionCall", name: name, args: args};
+    return {type: "functionCall", name: name.name, args: args};
   }
 
 argumentList
-  = head:argument tail:("," argument)* {
+  = head:(_ argument _) tail:((",") _ argument _)* {
+  	const loc = location();
+    const startCol = loc.start.column;
+    const wsBefore = head[0].length;
+    const name = head[1].name
+    const nameLength = name.length + head[1].wsCount;
+    const wsAfter = head[2].length;
+    let curEnd = startCol + wsBefore + nameLength + wsAfter;
+
     let result = [{
-      name: head,
-      location: location()
+      name,
+      isQuoted: head[1].isQuoted,
+      start: startCol,
+      end: curEnd,
+      index: 0
     }];
+
     for (let i = 0; i < tail.length; i++) {
+      const startCol = curEnd + 1;
+      const wsBefore = tail[i][1].length;
+      const name = tail[i][2].name
+      const nameLength = name.length + tail[i][2].wsCount;
+      const wsAfter = tail[i][3].length;
+	  curEnd = startCol + wsBefore + nameLength + wsAfter;
+
       result.push({
-      	name: tail[i][1],
-        location: location()
+      	name,
+		isQuoted: tail[i][2].isQuoted,
+		start: startCol,
+        end: curEnd,
+        index: i + 1
       });
     }
     return result;
@@ -38,22 +60,40 @@ argumentList
 argument
   = identifier / stringLiteral / numberLiteral
 
+_ "whitespace"
+  = [ \t\n\r]*
+
 identifier
   = first:letter rest:letterOrDigitOrSpecial* {
-    return first + rest.join("");
+    return {
+      name: first + rest.join(""),
+      isQuoted: false,
+      wsCount: 0
+    }
   }
 
 stringLiteral
   = "\"" chars:doubleChar* "\"" {
-    return chars.join("");
+    return {
+      name: chars.join(""),
+      isQuoted: true,
+      wsCount: 2
+    }
   }
   / "\'" chars:singleChar* "\'" {
-    return chars.join("");
+    return {
+      name: chars.join(""),
+      isQuoted: true,
+      wsCount: 2
+    }
   }
 
 numberLiteral
   = digits:[0-9]+ {
-    return parseInt(digits.join(""), 10);
+    return {
+      name: parseInt(digits.join(""), 10),
+      wsCount: 0
+    }
   }
 
 letter
@@ -77,8 +117,7 @@ ignored
   = chars:[^+*-/=; ]+ { // this will ignore any characters that are not a letter, digit, or underscore
     return {type: "ignored", value: chars.join("")};
   }
-  
-`;
+  `
 
 
 const parserSource = PEG.buildParser(grammar, {
