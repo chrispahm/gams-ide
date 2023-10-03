@@ -33,39 +33,63 @@ module.exports = async function getSymbolUnderCursor(args) {
     // find the word in the reference tree
     const referenceTree = state.get("referenceTree");
     const solves = state.get("solves")
-    let matchingRef = referenceTree?.find((item) => item.name?.toLowerCase() === word?.toLowerCase());
+
     // const position = editor.selection.active;
     const line = position.line;
     const column = position.character;
     const file = document.fileName;
 
-    if (!matchingRef) {
-      // parse the line using the PEG parser
-      try {
-        console.log('line.text', document.lineAt(line));
-        const { text: lineText } = document.lineAt(line);
-        const ast = gamsParser.parse(lineText);
-        console.log('ast', ast);
+    let quotedElement = "";
+    let functionName = "";
+    let domain = [];
+    let domainIndex = 0;
 
-        const gamsSymbol = ast.find((functionCall) => functionCall.args?.find(
-          (arg) => arg?.name?.toLowerCase().includes(word?.toLowerCase())
-            && arg.location.start.column <= column
-            && arg.location.end.column >= column
-        ));
-        const argIndex = gamsSymbol?.args?.findIndex(
-          (arg) => arg?.name?.toLowerCase().includes(word?.toLowerCase())
-            && arg.location.start.column <= column
-            && arg.location.end.column >= column
-        );
-        matchingRef = referenceTree?.find((item) => item.name?.toLowerCase() === gamsSymbol?.name?.toLowerCase());
-        matchingRef = matchingRef.domain[argIndex]
-      } catch (error) {
-        console.log("Error finding quoted string in GAMS symbols: ", error);
+    // first, we try to find the reference in the reference tree without checking the AST
+    let matchingRef = referenceTree?.find(
+      (item) => item.name?.toLowerCase() === word?.toLowerCase()
+    );
+    const { text: lineText } = document.lineAt(line);
+    let ast = [];
+    try {
+      ast = gamsParser.parse(lineText);
+    } catch (error) {
+      console.log("Error parsing line: ", error);
+    }
+    if (ast) {
+      // parse the line using the PEG parser
+      const gamsSymbol = ast.find((functionCall) => functionCall.args?.find(
+        (arg) => arg?.name?.toLowerCase().includes(word?.toLowerCase())
+          && arg.start <= column
+          && arg.end >= column
+      ));
+      const arg = gamsSymbol?.args?.find(
+        (arg) => arg?.name?.toLowerCase().includes(word?.toLowerCase())
+          && arg.start <= column
+          && arg.end >= column
+      );
+      if (gamsSymbol) {
+        const functionRef = referenceTree?.find((item) => item.name?.toLowerCase() === gamsSymbol?.name?.toLowerCase());
+        if (arg.isQuoted) {
+          quotedElement = arg.name;
+        }
+        functionName = gamsSymbol.name;
+        domain = functionRef?.domain?.map((domain) => domain.name);
+        domainIndex = arg.index;
+        
+        if (!matchingRef) {
+          matchingRef = functionRef.domain[arg.index]
+        }
       }
     }
+
+
     if (matchingRef && gamsView) {
       state.update("curSymbol", {
         ...matchingRef,
+        quotedElement,
+        functionName,
+        functionDomain: domain,
+        functionDomainIndex: domainIndex,
         historyCursorFile: file,
         historyCursorLine: line + 1,
         historyCursorColumn: column + 1
@@ -75,6 +99,10 @@ module.exports = async function getSymbolUnderCursor(args) {
         command: "updateReference",
         data: {
           ...matchingRef,
+          quotedElement,
+          functionName,
+          functionDomain: domain,
+          functionDomainIndex: domainIndex,
           historyCursorFile: file,
           historyCursorLine: line,
           historyCursorColumn: column
