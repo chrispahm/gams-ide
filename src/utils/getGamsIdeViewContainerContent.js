@@ -69,6 +69,7 @@ https://cdn.jsdelivr.net/npm/simple-undo@1.0.2/lib/simple-undo.min.js
         </span>
       </div>
       <div v-if="name" slot="content" style="margin-bottom: 40px;">
+      <span v-html="functionHTML"></span>
       <h1>{{name}}</h1>
 	  	<div>{{type}}</div>
 	  	<div>
@@ -256,6 +257,10 @@ https://cdn.jsdelivr.net/npm/simple-undo@1.0.2/lib/simple-undo.min.js
         control: undefined,
         controlShown: false,
         missingSymbol: "",
+        quotedElement: "",
+        functionName: "",
+        functionDomain: "",
+        domainIndex: "",
         historyCursorFile: undefined,
         historyCursorLine: undefined,
         historyCursorColumn: undefined,
@@ -269,6 +274,30 @@ https://cdn.jsdelivr.net/npm/simple-undo@1.0.2/lib/simple-undo.min.js
         clickedSym: '',
         selectedSolve: 0,
         autoUnfoldListingEntriesTreshold: 10
+      }
+    },
+    computed: {
+      functionHTML() {
+        /*
+        if (this.functionName) {
+        
+          let html = '<span style="font-style: italic;" @click="updateSymbol("' + this.functionName + '")>' + this.functionName + '</span>' + '('
+          this.functionDomain.forEach((elem, i) => {
+            if (i > 0) html += ', '
+            if (i === this.functionDomainIndex) {
+              html += '<span @click="updateSymbol("' + elem + '")><b>' + elem + '</b></span>'
+            } else {
+              html += '<span @click="updateSymbol("' + elem + '")>' + elem + '</span>'
+            }
+          });
+          html += ')'
+          return html;
+        */
+        if (this.quotedElement) {
+          return '<span>Element "</span><span style="font-style: italic;">' + this.quotedElement + '</span><span>" from set</span>'
+        } else {
+          return '<br>'
+        }
       }
     },
     mounted: function () {
@@ -300,6 +329,10 @@ https://cdn.jsdelivr.net/npm/simple-undo@1.0.2/lib/simple-undo.min.js
                 "subset",
                 "superset",
                 "symId",
+                "quotedElement",
+                "functionName",
+                "functionDomain",
+                "functionDomainIndex",
                 "historyCursorFile",
                 "historyCursorLine",
                 "historyCursorColumn"
