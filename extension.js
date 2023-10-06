@@ -12,6 +12,7 @@ let terminal;
 let gamsView;
 let gamsSymbolView;
 
+
 async function activate(context) {
   // first, we try to delete all contents of the scratch directory (scrdir) to avoid
   // conflicts with previous runs
@@ -24,19 +25,13 @@ async function activate(context) {
   const state = new State();
   // start listening to save events to generate diagnostics
   const collection = vscode.languages.createDiagnosticCollection("gams");
+  
   if (vscode.window.activeTextEditor) {
     const document = vscode.window.activeTextEditor.document;
     // check if the active editor is a GAMS file
     if (document.languageId === "gams") {
       await updateDiagnostics({ document, collection, gamsSymbolView, state, terminal });
-    } else if (document.fileName.toLowerCase().endsWith('.lst')) {
-      await debouncedListenToLstFiles({
-        document,
-        contentChanges: ["yay"], // fake content changes to trigger the update
-        gamsView,
-        state
-      });
-    }
+    } 
   }
 
   // update both diagnostics and listing file parsing on editor change
@@ -51,11 +46,16 @@ async function activate(context) {
           state,
           terminal
         });
+        // get current cursor position
+        getSymbolUnderCursor({ event: {
+          textEditor: editor,
+          selections: editor.selections,
+        }, gamsSymbolView, state, gamsView });
       } else if (editor && editor.document.fileName.toLowerCase().endsWith('.lst')) {
         isListing = true;
         await debouncedListenToLstFiles({
           document: editor.document,
-          contentChanges: ["yay"], // fake content changes to trigger the update
+          contentChanges: [], // fake content changes to trigger the update
           gamsView,
           state
         });
@@ -196,8 +196,15 @@ async function activate(context) {
               terminal.sendText(String.fromCharCode(3));
               break;
             case 'getState':
+              console.log("got getState message");
               const isListing = vscode.window.activeTextEditor && vscode.window.activeTextEditor.document.fileName.toLowerCase().endsWith('.lst');
               if (isListing) {
+                await debouncedListenToLstFiles({
+                  document: vscode.window.activeTextEditor.document,
+                  contentChanges: [],
+                  gamsView,
+                  state
+                });
                 const lstTree = state.get("lstTree");
                 if (lstTree) {
                   webviewView.webview.postMessage({
@@ -209,6 +216,10 @@ async function activate(context) {
                   });
                 }
               } else {
+                getSymbolUnderCursor({ event: {
+                  textEditor: vscode.window.activeTextEditor,
+                  selections: vscode.window.activeTextEditor?.selections,
+                }, gamsSymbolView, state, gamsView });
                 const curSymbol = state.get("curSymbol");
                 if (curSymbol) {
                   webviewView.webview.postMessage({
