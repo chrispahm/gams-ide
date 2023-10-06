@@ -28,7 +28,7 @@ module.exports = async function updateDiagnostics(args) {
 
   if (document && collection) {
     // get the compile statement for the current document
-    const compileCommand = await createGamsCompileCommand(document, [shouldParseSymbolValues ? "dumpopt=11" : ""]);
+    const compileCommand = await createGamsCompileCommand(document.fileName, [shouldParseSymbolValues ? "dumpopt=11" : ""]);
     // run the compile command
     const command = `${compileCommand.gamsExe} ${compileCommand.gamsArgs.join(" ")}`;
     console.log("compileCommand", compileCommand, command);
