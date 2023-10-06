@@ -1,6 +1,7 @@
 const vscode = require("vscode");
 const createGamsCommand = require("./utils/createGamsCommand.js");
 const os = require("os");
+const path = require("path");
 
 async function openListing(listingPath) {
   const doc = await vscode.workspace.openTextDocument(listingPath);
@@ -9,9 +10,12 @@ async function openListing(listingPath) {
 
 module.exports = async function runGams(terminal, compileOnly = false, ignoreMultiFileEntryPoint = false) {
   const editor = vscode.window.activeTextEditor;
-  if (editor && editor.document.languageId === "gams") {
-    const document = editor.document;
-    const gamsCommand = await createGamsCommand(document, ["lo=3", compileOnly ? "a=c" : ""], ignoreMultiFileEntryPoint);
+  if (editor && (editor.document.languageId === "gams" || editor.document.fileName.toLowerCase().endsWith('.lst'))) {
+    let fileToRun = editor.document.fileName;
+    if (editor.document.fileName.toLowerCase().endsWith('.lst')) {
+      fileToRun = path.format({ ...path.parse(fileToRun), base: '', ext: '.gms' })
+    }
+    const gamsCommand = await createGamsCommand(fileToRun, ["lo=3", compileOnly ? "a=c" : ""], ignoreMultiFileEntryPoint);
     // if the terminal has been closed, create a new one
     if (terminal.exitStatus !== undefined) {
       terminal = vscode.window.createTerminal("GAMS");
