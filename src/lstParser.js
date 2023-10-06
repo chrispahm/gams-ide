@@ -51,7 +51,13 @@ module.exports = function listingParser(file) {
     rl.on('line', (line) => {
       lineno++
 
-      if (line === 'Compilation') {
+      if ((/^(\*\*\*\*)\s*\d\d/).test(line)) {
+        const errorMessage = line.match(/(\*\*\*\*)\s*(.*)/)[2]
+        save("Error: " + errorMessage, [
+          [lineno],
+          [0]
+        ], true, null)
+      } else if (line === 'Compilation') {
         save('C o m p i l a t i o n', [
           [lineno],
           [0]

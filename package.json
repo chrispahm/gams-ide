@@ -2,7 +2,7 @@
   "name": "gams-ide",
   "displayName": "gams-ide",
   "description": "A GAMS integrated development environment for vscode",
-  "version": "0.0.52",
+  "version": "0.0.53",
   "repository": {
     "type": "git",
     "url": "https://github.com/chrispahm/gams-ide"
@@ -65,6 +65,11 @@
         },
         "gamsIde.showCompilationNotifications": {
           "description": "Notify when GAMS encountered system issues (e.g. missing .opt files) during compilation.",
+          "type": "boolean",
+          "default": true
+        },
+        "gamsIde.jumpToFirstError": {
+          "description": "Jump to the first error in the listing file when compilation errors are encountered.",
           "type": "boolean",
           "default": true
         },
