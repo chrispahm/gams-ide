@@ -3,7 +3,7 @@ const fs = require("fs");
 const { resolve, basename, dirname, parse, sep, format, isAbsolute } = require('path');
 const getGamsPath = require('./getGamsPath.js')
 
-module.exports = async function createGamsCommand(document, extraArgs = [], ignoreMultiFileEntryPoint = false) {
+module.exports = async function createGamsCommand(docFileName, extraArgs = [], ignoreMultiFileEntryPoint = false) {
   // get the default settings, and define the variables
   const defaultSettings = vscode.workspace.getConfiguration("gamsIde");  
   let gamsExecutable = await getGamsPath();
@@ -13,8 +13,8 @@ module.exports = async function createGamsCommand(document, extraArgs = [], igno
   let commandLineArguments = defaultSettings.get(
     "commandLineArguments_execution"
   ) || [];
-  let fileName = basename(document.fileName);
-  let filePath = dirname(document.fileName);
+  let fileName = basename(docFileName);
+  let filePath = dirname(docFileName);
 
   // if the scratch directory is not specified, we use 
   // this extension's scratch directory
@@ -79,7 +79,7 @@ module.exports = async function createGamsCommand(document, extraArgs = [], igno
     }
   }
 
-  let gamsFileToExecute = document.fileName;
+  let gamsFileToExecute = docFileName;
   if (multiFileEntryPointFile && !ignoreMultiFileEntryPoint) {
     gamsFileToExecute = multiFileEntryPointFile;
   }
