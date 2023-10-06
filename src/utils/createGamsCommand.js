@@ -32,7 +32,7 @@ module.exports = async function createGamsCommand(document, extraArgs = [], igno
   }
     
   // if a multi-file entry point is specified, we try to find the file in the workspace
-  if (multiFileEntryPoint && vscode.workspace.workspaceFolders && vscode.workspace.workspaceFolders.length) {
+  if (multiFileEntryPoint && vscode.workspace.workspaceFolders && vscode.workspace.workspaceFolders.length && !ignoreMultiFileEntryPoint) {
     // check if multi-file entry point is a an absolute path
     if (!isAbsolute(multiFileEntryPoint)) {
       // if not, we have to find the absolute path using glob and update the workspace settings accordingly
@@ -87,6 +87,7 @@ module.exports = async function createGamsCommand(document, extraArgs = [], igno
   let parsedListingPath = parse(gamsFileToExecute);
   parsedListingPath.ext = '.lst';
   parsedListingPath.base = '';
+  
   let listingPath = format(parsedListingPath);
   
   let gamsArgs = [`"${gamsFileToExecute}"`, 'PS=0', `-scrdir="${scratchDirectory}"`,
