@@ -30,10 +30,12 @@ module.exports = async function runGams(terminal, compileOnly = false, ignoreMul
     // this is necessary because the listing file is not available immediately
     // after the GAMS file has been executed
     for (let i = 0; i < 3; i++) {
-      try {
+      try {        
         await openListing(gamsCommand.listingPath);
         break;
       } catch (error) {
+        console.log(error);
+        
         // wait for 1 second before trying again
         await new Promise((resolve) => setTimeout(resolve, 250));
       }
