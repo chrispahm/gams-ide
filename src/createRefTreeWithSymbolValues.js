@@ -205,9 +205,9 @@ function getData(lst, solves, gamsSolves, referenceTree) {
       else if (line.includes('Error Messages') || line.includes('**** USER ERROR(S) ENCOUNTERED')) {
         // rl.close()
         // stream.destroy()
-        console.log('Compilation error in DMP lst file', lst);
+        console.log('User errors in DMP lst file', lst);
         foundError = true
-        reject("Compilation error in DMP lst file")
+        reject("User error in DMP .lst file")
       }
       // anything else
       else if (/^(\*\*\*\*)\s*\d/.test(line) || /^(GAMS)/.test(line) || line.includes("G e n e r a l") || /^(Range Statistics)/.test(line) || /^(RANGE STATISTICS)/.test(line) ) {
