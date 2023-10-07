@@ -103,18 +103,19 @@ module.exports = async function updateDiagnostics(args) {
           }).catch(err => {
             // show error in VS Code output
             // and add button to open the dmp file
-            vscode.window.showErrorMessage("Error creating GAMS symbols: " + err, "Open DMP lst", "Open scrdir", "Disable symbol parsing").then((value) => {
-              if (value === "Open DMP lst") {
-                vscode.workspace.openTextDocument(format({ ...parse(compileCommand.dumpPath), base: '', ext: '.lst' })).then((doc) => {
-                  vscode.window.showTextDocument(doc);
-                });
-              } else if (value === "Open scrdir") {
-                // open scrdir in explorer/finder                
-                vscode.env.openExternal(vscode.Uri.file(compileCommand.scratchDirectory));
-              } else if (value === "Disable symbol parsing") {
-                vscode.workspace.getConfiguration("gamsIde").update("parseSymbolValues", false);
-              }
-            });
+            if (!state.get("ignoreSymbolValueParsingError")) {
+              vscode.window.showErrorMessage("Error creating GAMS symbols: " + err, "Open DMP lst", "Disable symbol parsing", "Hide error").then((value) => {
+                if (value === "Open DMP lst") {
+                  vscode.workspace.openTextDocument(format({ ...parse(compileCommand.dumpPath), base: '', ext: '.lst' })).then((doc) => {
+                    vscode.window.showTextDocument(doc);
+                  });
+                } else if (value === "Disable symbol parsing") {
+                  vscode.workspace.getConfiguration("gamsIde").update("parseSymbolValues", false);
+                } else if (value === "Hide error") {
+                  state.update("ignoreSymbolValueParsingError", true);
+                }
+              });
+            }
             console.log("error", err);
           });
         }
