@@ -2,7 +2,7 @@
   "name": "gams-ide",
   "displayName": "gams-ide",
   "description": "A GAMS integrated development environment for vscode",
-  "version": "0.0.53",
+  "version": "0.0.54",
   "repository": {
     "type": "git",
     "url": "https://github.com/chrispahm/gams-ide"
