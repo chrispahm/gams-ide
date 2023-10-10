@@ -6,6 +6,8 @@ const getSymbolUnderCursor = require("./src/getSymbolUnderCursor");
 const getGamsIdeViewContainerContent = require("./src/utils/getGamsIdeViewContainerContent");
 const getGamsIdeSymbolViewContainerContent = require("./src/utils/getGamsIdeSymbolViewContainerContent");
 const debouncedListenToLstFiles = require("./src/parseLstFiles");
+const provideGAMSCompletionItems = require("./src/provideGAMSCompletionItems");
+const provideGAMSSignatureHelp = require("./src/provideGAMSSignatureHelp");
 const State = require("./src/State.js");
 
 let terminal;
@@ -90,6 +92,24 @@ async function activate(context) {
     })
   );
 
+  // provide auto-completeion 
+  context.subscriptions.push(
+    vscode.languages.registerCompletionItemProvider("gams", {
+      provideCompletionItems(document, position) {
+        return provideGAMSCompletionItems(document, position, state);
+      }
+    }, " ", ",", "(", "[", "{", ":", ">", "<", "=", "+", "-", "*", "/", "^", "!", "&", "|", ">", "<", "\t")
+  );
+
+  // provide signature help
+  context.subscriptions.push(
+    vscode.languages.registerSignatureHelpProvider("gams", {
+      provideSignatureHelp(document, position) {
+        return provideGAMSSignatureHelp(document, position, state);
+      }
+    }, "(", ",")
+  );
+
   // register a command to execute a GAMS file
   context.subscriptions.push(
     vscode.commands.registerCommand("gams.run", () => runGams(terminal))
@@ -124,7 +144,7 @@ async function activate(context) {
   // add the gams reference tree sidebar
   vscode.window.registerWebviewViewProvider('gamsIdeView', {
     // Implement the resolveWebviewView method
-    resolveWebviewView(webviewView, undefined, token) {
+    resolveWebviewView(webviewView, undefined) {
       gamsView = webviewView;
       // Set the webview options
       webviewView.webview.options = {
@@ -178,14 +198,21 @@ async function activate(context) {
               }
 
               if (matchingRef) {
+                const data = {
+                  ...matchingRef,
+                  domain: matchingRef.domain?.map((domain) => ({ name: domain.name })),
+                  subsets: matchingRef.subsets?.map((subset) => ({ name: subset.name })),
+                  superset: {
+                    name: matchingRef.superset?.name
+                  },
+                  historyCursorFile: file,
+                  historyCursorLine: line + 1,
+                  historyCursorColumn: column + 1
+                };
+                
                 gamsView.webview.postMessage({
                   command: "updateReference",
-                  data: {
-                    ...matchingRef,
-                    historyCursorFile: file,
-                    historyCursorLine: line + 1,
-                    historyCursorColumn: column + 1
-                  }
+                  data
                 });
               }
               break;
@@ -196,7 +223,6 @@ async function activate(context) {
               terminal.sendText(String.fromCharCode(3));
               break;
             case 'getState':
-              console.log("got getState message");
               const isListing = vscode.window.activeTextEditor && vscode.window.activeTextEditor.document.fileName.toLowerCase().endsWith('.lst');
               if (isListing) {
                 await debouncedListenToLstFiles({
@@ -221,9 +247,12 @@ async function activate(context) {
                   selections: vscode.window.activeTextEditor?.selections,
                 }, gamsSymbolView, state, gamsView });
                 const curSymbol = state.get("curSymbol");
+                curSymbol.domain = curSymbol.domain?.map((domain) => ({ name: domain.name }));
+                curSymbol.subsets = curSymbol.subsets?.map((subset) => ({ name: subset.name }));
+
                 if (curSymbol) {
                   webviewView.webview.postMessage({
-                    command: "updateListing",
+                    command: "updateReference",
                     data: curSymbol
                   });
                 }
@@ -236,7 +265,7 @@ async function activate(context) {
       );
         
     }
-  })
+  });
   context.subscriptions.push(gamsView);
   // add a command to open the gams reference tree sidebar
   context.subscriptions.push(
@@ -249,7 +278,7 @@ async function activate(context) {
   function createGamsSymbolView() {
     return {
       // Implement the resolveWebviewView method
-      resolveWebviewView(webviewView, undefined, token) {
+      resolveWebviewView(webviewView) {
         gamsSymbolView = webviewView;
         // Set the webview options
         webviewView.webview.options = {
@@ -278,12 +307,12 @@ async function activate(context) {
           }
         });
       }
-    }
+    };
   }
   // add the gams symbol view if enabled
   let showSymbolViewCommandDisposable, gamsSymbolViewDisposable;
   // create the gams symbol view
-  gamsSymbolViewDisposable = vscode.window.registerWebviewViewProvider('gamsIdeSymbolView', createGamsSymbolView())
+  gamsSymbolViewDisposable = vscode.window.registerWebviewViewProvider('gamsIdeSymbolView', createGamsSymbolView());
   context.subscriptions.push(gamsSymbolViewDisposable);
 
   // add a command to open the gams symbol view sidebar
@@ -300,7 +329,7 @@ async function activate(context) {
     } else {
       gamsSymbolView?.show();
     }
-  })
+  });
 
   context.subscriptions.push(showSymbolViewCommandDisposable);
 
