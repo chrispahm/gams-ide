@@ -32,7 +32,7 @@ module.exports = async function getSymbolUnderCursor(args) {
 
     // find the word in the reference tree
     const referenceTree = state.get("referenceTree");
-    const solves = state.get("solves")
+    const solves = state.get("solves");
 
     // const position = editor.selection.active;
     const line = position.line;
@@ -53,39 +53,39 @@ module.exports = async function getSymbolUnderCursor(args) {
     try {
       ast = gamsParser.parse(lineText);
     } catch (error) {
-      console.log("Error parsing line: ", error);
+      console.error("Error parsing line: ", error);
     }
-    if (ast) {
+    if (ast) {      
       // parse the line using the PEG parser
-      const gamsSymbol = ast.find((functionCall) => functionCall.args?.find(
-        (arg) => arg?.name?.toLowerCase().includes(word?.toLowerCase())
-          && arg.start <= column
-          && arg.end >= column
+      const gamsSymbol = ast.find((entry) =>
+      (entry.name?.toLowerCase().includes(word?.toLowerCase())
+        && entry.start <= column
+        && entry.end >= column
       ));
-      const arg = gamsSymbol?.args?.find(
-        (arg) => arg?.name?.toLowerCase().includes(word?.toLowerCase())
-          && arg.start <= column
-          && arg.end >= column
-      );
+      
       if (gamsSymbol) {
-        const functionRef = referenceTree?.find((item) => item.name?.toLowerCase() === gamsSymbol?.name?.toLowerCase());
-        if (arg.isQuoted) {
-          quotedElement = arg.name;
+        const functionRef = referenceTree?.find((item) => item.nameLo === gamsSymbol?.functionName?.toLowerCase());
+        if (gamsSymbol.isQuoted) {
+          quotedElement = gamsSymbol.name;
         }
-        functionName = gamsSymbol.name;
+        functionName = gamsSymbol.functionName;
         domain = functionRef?.domain?.map((domain) => domain.name);
-        domainIndex = arg.index;
-        
+        domainIndex = gamsSymbol.index;
+
         if (!matchingRef) {
-          matchingRef = functionRef.domain[arg.index]
+          matchingRef = functionRef.domain[domainIndex];
         }
       }
     }
 
-
     if (matchingRef && gamsView) {
-      state.update("curSymbol", {
+      const data = {
         ...matchingRef,
+        domain: matchingRef.domain?.map((domain) => ({ name: domain.name })),
+        subsets: matchingRef.subsets?.map((subset) => ({ name: subset.name })),
+        superset: {
+          name: matchingRef.superset?.name
+        },
         quotedElement,
         functionName,
         functionDomain: domain,
@@ -93,20 +93,14 @@ module.exports = async function getSymbolUnderCursor(args) {
         historyCursorFile: file,
         historyCursorLine: line + 1,
         historyCursorColumn: column + 1
-      })
-      // send data to webview      
+      };
+
+      state.update("curSymbol", data);
+      
+      // send data to webview
       gamsView.webview.postMessage({
         command: "updateReference",
-        data: {
-          ...matchingRef,
-          quotedElement,
-          functionName,
-          functionDomain: domain,
-          functionDomainIndex: domainIndex,
-          historyCursorFile: file,
-          historyCursorLine: line,
-          historyCursorColumn: column
-        },
+        data
       });
     } else if (gamsView) {
       gamsView.webview.postMessage({
@@ -143,4 +137,4 @@ module.exports = async function getSymbolUnderCursor(args) {
       });
     }
   }
-}
+};
