@@ -9,9 +9,9 @@ module.exports = async function getGamsPath() {
   
   // if there is no gamsExecutable, try to find it in the PATH
   if (!gamsExecutable) {
-    const gamsPath = which('gams')
+    const gamsPath = which('gams');
     if (gamsPath) {
-      gamsExecutable = gamsPath
+      gamsExecutable = gamsPath;
       // update the workspace settings
       vscode.workspace.getConfiguration().update("gamsIde.gamsExecutable", gamsExecutable, vscode.ConfigurationTarget.Workspace);
       // show info message, with button to open settings
@@ -27,21 +27,21 @@ module.exports = async function getGamsPath() {
   // if there is still no gamsExecutable, try to find it in the default installation directories
   if (!gamsExecutable) {
     if (os.platform() === 'win32') {
-      const checkC = await glob('C:/GAMS/*/*/gams.exe')
-      const checkN = await glob('N:/soft/GAMS*/gams.exe')
+      const checkC = await glob('C:/GAMS/*/*/gams.exe');
+      const checkN = await glob('N:/soft/GAMS*/gams.exe');
       if (checkC.length > 0) {
         // use the latest Version of GAMS that was found
         if (Array.isArray(checkC)) {
-          gamsExecutable = checkC[checkC.length - 1]
+          gamsExecutable = checkC[checkC.length - 1];
         } else {
-          gamsExecutable = checkC
+          gamsExecutable = checkC;
         }
-        gamsExecutable = checkC[checkC.length - 1]
+        gamsExecutable = checkC[checkC.length - 1];
       } else if (checkN.length > 0) {
         if (Array.isArray(checkN)) {
-          gamsExecutable = checkN[checkN.length - 1]
+          gamsExecutable = checkN[checkN.length - 1];
         } else {
-          gamsExecutable = checkN
+          gamsExecutable = checkN;
         }
       }
     } else if (os.platform() === 'darwin') {
@@ -49,20 +49,20 @@ module.exports = async function getGamsPath() {
         '/Applications/GAMS*/sysdir/gams',
         '/Applications/GAMS*/Resources/sysdir/gams',
         '/Library/Frameworks/GAMS.framework/Versions/Current/Resources/gams'
-      ]
+      ];
       const working = paths.find(curPath => {
-        const present = globSync(curPath)
-        if (present && present.length > 0) return present
-      })
+        const present = globSync(curPath);
+        if (present && present.length > 0) return present;
+      });
       if (working.length > 0) {
         if (Array.isArray(working)) {
-          gamsExecutable = working[working.length - 1]
+          gamsExecutable = working[working.length - 1];
         } else {
-          gamsExecutable = working
+          gamsExecutable = working;
         }
       }
     } else if (os.platform() === 'linux') {
-      gamsExecutable = '/opt/gams/gams24.8_linux_x64_64_sfx'
+      gamsExecutable = '/opt/gams/gams24.8_linux_x64_64_sfx';
     }
     if (gamsExecutable) {
       vscode.workspace.getConfiguration().update("gamsIde.gamsExecutable", gamsExecutable, vscode.ConfigurationTarget.Workspace);
@@ -86,8 +86,6 @@ module.exports = async function getGamsPath() {
       }
     });
   }
-  
-  console.log("gamsExecutable", gamsExecutable);
-  
-  return gamsExecutable
-}
+    
+  return gamsExecutable;
+};

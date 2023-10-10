@@ -13,7 +13,7 @@ module.exports = async function runGams(terminal, compileOnly = false, ignoreMul
   if (editor && (editor.document.languageId === "gams" || editor.document.fileName.toLowerCase().endsWith('.lst'))) {
     let fileToRun = editor.document.fileName;
     if (editor.document.fileName.toLowerCase().endsWith('.lst')) {
-      fileToRun = path.format({ ...path.parse(fileToRun), base: '', ext: '.gms' })
+      fileToRun = path.format({ ...path.parse(fileToRun), base: '', ext: '.gms' });
     }
     const gamsCommand = await createGamsCommand(fileToRun, ["lo=3", compileOnly ? "a=c" : ""], ignoreMultiFileEntryPoint);
     // if the terminal has been closed, create a new one
@@ -38,11 +38,10 @@ module.exports = async function runGams(terminal, compileOnly = false, ignoreMul
         await openListing(gamsCommand.listingPath);
         break;
       } catch (error) {
-        console.log(error);
-        
+        console.error("error in runGams " + error);
         // wait for 1 second before trying again
         await new Promise((resolve) => setTimeout(resolve, 250));
       }
     }
   }
-}
+};

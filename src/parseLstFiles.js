@@ -18,13 +18,11 @@ async function listenToLstFiles(args) {
   const isContentChangedExternally = contentChanges.length;
   if (path.extname(document.fileName).toLowerCase() === ".lst" && !document.isDirty && isOpen) {
     // parse the listing file
-    const ast = await lstParser(document.fileName)
+    const ast = await lstParser(document.fileName);
     state.update("lstTree", ast);
     // check if the active document is a listing file
     const isListing = vscode.window.activeTextEditor && vscode.window.activeTextEditor.document.fileName.toLowerCase().endsWith('.lst');
-    // send the AST to the webview
-    console.log("Sending AST to webview", gamsView?.webview);
-    
+    // send the AST to the webview    
     gamsView?.webview?.postMessage({
       command: "updateListing",
       data: {
@@ -60,8 +58,6 @@ async function listenToLstFiles(args) {
     if (isJumpToAbortEnabled) {
       const abortStatement = ast.find(node => node.type === "Abort");
       if (abortStatement) {
-        console.log(abortStatement);
-
         const abortPosition = new vscode.Position(abortStatement.line[0] - 1, abortStatement.column[0]);
         const options = {
           selection: new vscode.Range(abortPosition, abortPosition),
@@ -76,8 +72,6 @@ async function listenToLstFiles(args) {
     const jumpTo = vscode.workspace.getConfiguration("gamsIde").get("defaultParameterToJumpToAfterSolve");
     if (jumpTo) {
       // find the parameter in the ast
-      console.log(jumpTo, ast);
-
       const jumpToParameter = ast.flatMap(node => node?.entries).findLast(entry => entry?.name?.toLowerCase() === jumpTo.toLowerCase());
       if (jumpToParameter) {
         const jumpToPosition = new vscode.Position(jumpToParameter.line - 1, jumpToParameter.column);
