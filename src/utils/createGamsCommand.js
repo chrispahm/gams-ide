@@ -1,7 +1,8 @@
 const vscode = require("vscode");
 const fs = require("fs");
 const { resolve, basename, dirname, parse, sep, format, isAbsolute } = require('path');
-const getGamsPath = require('./getGamsPath.js')
+const checkIfExcluded = require('./checkIfExcluded.js');
+const getGamsPath = require('./getGamsPath.js');
 
 module.exports = async function createGamsCommand(docFileName, extraArgs = [], ignoreMultiFileEntryPoint = false) {
   // get the default settings, and define the variables
@@ -31,6 +32,10 @@ module.exports = async function createGamsCommand(docFileName, extraArgs = [], i
     }
   }
     
+  // perform a quick check if the current file is excluded from the multi-file entry point
+  if (!ignoreMultiFileEntryPoint && multiFileEntryPoint) {
+    ignoreMultiFileEntryPoint = checkIfExcluded(docFileName, defaultSettings.get("excludeFromMultiFileEntryPoint"));
+  }
   // if a multi-file entry point is specified, we try to find the file in the workspace
   if (multiFileEntryPoint && vscode.workspace.workspaceFolders && vscode.workspace.workspaceFolders.length && !ignoreMultiFileEntryPoint) {
     // check if multi-file entry point is a an absolute path

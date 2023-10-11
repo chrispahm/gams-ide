@@ -48,18 +48,19 @@ function parseDMP(file, config, referenceTree) {
       crlfDelay: Infinity
     })
 
-    let lineno = 0
-    const defaultSettings = vscode.workspace.getConfiguration("gamsIde")
-    const dumpFile = fs.createWriteStream(`${config.scratchdir}${path.sep}${path.basename(file, '.dmp')}.gms`, { flags: 'w' })
-    const symbols = _.filter(referenceTree, o => { return o.type === 'SET' || o.type === 'PARAM' && o.name })
-    const solves = []
+    let lineno = 0;
+    const defaultSettings = vscode.workspace.getConfiguration("gamsIde");
+    const consoleDispWidth = defaultSettings.get('consoleDispWidth');
+    const dumpFile = fs.createWriteStream(`${config.scratchdir}${path.sep}${path.basename(file, '.dmp')}.gms`, { flags: 'w' });
+    const symbols = _.filter(referenceTree, o => { return o.type === 'SET' || o.type === 'PARAM' && o.name; });
+    const solves = [];
 
     rl.on('line', (line) => {
       if (/solve (.*?) using/i.test(line)) {
-        const model = line.split(/solve/i)[1].split(/\s+/)[1]
-        dumpFile.write('option dispWidth=15;\ndisplay\n')
-        lineno += 2
-        const display = lineno + 1
+        const model = line.split(/solve/i)[1].split(/\s+/)[1];
+        dumpFile.write('option dispWidth='+ consoleDispWidth +';\ndisplay\n');
+        lineno += 2;
+        const display = lineno + 1;
         symbols.forEach((symbol) => {
           dumpFile.write(`$if defined ${symbol.name} ${symbol.name} \n`)
           lineno++
@@ -89,10 +90,10 @@ function parseDMP(file, config, referenceTree) {
     })
 
     rl.on('close', () => {
-      dumpFile.end()
-      // fs.unlink(file, (err) => {
-      //   if (err) throw err
-      // })
+      dumpFile.end();
+      fs.unlink(file, (err) => {
+        if (err) throw err;
+      });
       resolve({
         dumpFile,
         solves
