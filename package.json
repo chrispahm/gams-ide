@@ -54,12 +54,12 @@
           "default": ""
         },
         "gamsIde.scratchDirectory": {
-          "description": "The (scratch) directory where linter-GAMS will read/write temp files. Ideally located on a fast internal disk.",
+          "description": "The (scratch) directory where gams-ide will read/write temp files. Ideally located on a fast internal disk.",
           "type": "string",
           "default": ""
         },
         "gamsIde.maxErrorsToDisplay": {
-          "description": "The maximum amount of errors that will be highlighted by linter-gams. Put a 0 if no maximum should be defined. Keep in mind that often only the first error is an actual GAMS error, while the subsequent errors may result from the first error.",
+          "description": "Maximum amount of errors that will be highlighted by gams-ide. Put a 0 if no maximum should be defined. Keep in mind that often only the first error is an actual GAMS error, while the subsequent errors may result from the first error.",
           "type": "integer",
           "default": 1
         },
@@ -69,12 +69,12 @@
           "default": true
         },
         "gamsIde.jumpToFirstError": {
-          "description": "Jump to the first error in the listing file when compilation errors are encountered.",
+          "description": "Automatically scroll to the first error in the listing file when compilation errors are encountered.",
           "type": "boolean",
           "default": true
         },
         "gamsIde.jumpToAbort": {
-          "description": "In the listing file, automatically jump to the abort parameter if present.",
+          "description": "If found, automatically scroll to the first abort parameter found in the listing file.",
           "type": "boolean",
           "default": true
         },
@@ -84,7 +84,7 @@
           "default": 10
         },
         "gamsIde.onlyAutoUnfoldDisplayStatements": {
-          "description": "If true, only displays will be unfolded, else all entries that fall below the treshold above will be unfolded.",
+          "description": "Limit 'Auto unfold listing entries treshold' to display statements. Other listing entries will not be unfolded automatically.",
           "type": "boolean",
           "default": true
         },
@@ -94,14 +94,19 @@
           "default": "p_sumRes"
         },
         "gamsIde.autoScrollToEndOfListing": {
-          "description": "If true, the listing will be scrolled to the end after a solve.",
+          "description": "Automatically scroll to the end of the listing after a solve.",
           "type": "boolean",
           "default": true
         },
         "gamsIde.multi_fileEntryPoint": {
-          "description": "You may specify the GAMS entry file for multi file models. Remember that for GGIG models these will be set by default.",
+          "description": "Main GAMS file to execute if your model consists of multiple files. This file will be executed when you press the 'Run' button, and compiled when saving any file in your workspace. Common multi-file entry points are 'exp_starter.gms' (FarmDyn), 'capmod.gms' (CAPRI), and 'com_.gms' (CGEBOX).",
           "type": "string",
           "default": "exp_starter.gms"
+        },
+        "gamsIde.excludeFromMultiFileEntryPoint": {
+          "description": "Exclude the following files from the multi-file entry point. This is useful if you have a file or folders that are only used for data generation, but not for the actual model. Note: Only relative and absolute paths without glob characters are supported. Relative paths are relative to the (first) workspace root.",
+          "type": "array",
+          "default": []
         },
         "gamsIde.commandLineArguments_compilation": {
           "description": "Additional command line arguments to pass to GAMS during compilation.",
