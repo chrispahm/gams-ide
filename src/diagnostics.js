@@ -1,5 +1,5 @@
 const vscode = require("vscode");
-const { dirname, format, parse } = require("node:path");
+const { format, parse } = require("node:path");
 const { exec } = require('node:child_process');
 const { readFile, access } = require("fs/promises");
 const parseError = require("./utils/parseError.js");
@@ -9,7 +9,7 @@ const createGamsCompileCommand = require("./utils/createGamsCompileCommand.js");
 const createRefTreeWithSymbolValues = require("./createRefTreeWithSymbolValues.js");
 
 function execAsync(command) {
-  return new Promise((resolve, reject) => {
+  return new Promise((resolve) => {
     exec(command, (error, stdout, stderr) => {
       resolve({ error, stdout, stderr });
     });
@@ -24,15 +24,14 @@ module.exports = async function updateDiagnostics(args) {
     terminal
   } = args;
 
-  const shouldParseSymbolValues = vscode.workspace.getConfiguration("gamsIde").get("parseSymbolValues")
+  const shouldParseSymbolValues = vscode.workspace.getConfiguration("gamsIde").get("parseSymbolValues");
 
   if (document && collection) {
     // get the compile statement for the current document
     const compileCommand = await createGamsCompileCommand(document.fileName, [shouldParseSymbolValues ? "dumpopt=11" : ""]);
     // run the compile command
     const command = `${compileCommand.gamsExe} ${compileCommand.gamsArgs.join(" ")}`;
-    console.log("compileCommand", compileCommand, command);
-    let res
+    let res;
     try {
       // run the compile command      
       res = await execAsync(command);
@@ -40,7 +39,6 @@ module.exports = async function updateDiagnostics(args) {
       // show error in VS Code output
       // and add button to open the lst file
       vscode.window.showErrorMessage("GAMS compilation failed: " + command + " -> " + error);
-      console.log("error");
     }
 
     // get the output of the compile command
@@ -53,11 +51,10 @@ module.exports = async function updateDiagnostics(args) {
       // vscode.window.showErrorMessage("GAMS compilation failed: Check the GAMS output in the terminal");
       // terminal?.show(true);
       // terminal?.sendText(command);
-      // console.log("error", res.error);
       // return;
     }
     const stdout = res.stdout;
-    const stderr = res.stderr;
+    // const stderr = res.stderr; // sterr is always emtpy as GAMS writes errors to stdout
 
     try {
       // parse the reference tree
@@ -92,7 +89,7 @@ module.exports = async function updateDiagnostics(args) {
             });
             
           }).catch(err => {
-            console.log("error", err);
+            console.error("error", err);
           });
           */
           createRefTreeWithSymbolValues({
@@ -104,8 +101,8 @@ module.exports = async function updateDiagnostics(args) {
             // show error in VS Code output
             // and add button to open the dmp file
             if (!state.get("ignoreSymbolValueParsingError")) {
-              vscode.window.showErrorMessage("Error creating GAMS symbols: " + err, "Open DMP lst", "Disable symbol parsing", "Hide error").then((value) => {
-                if (value === "Open DMP lst") {
+              vscode.window.showWarningMessage("GAMS Symbols: " + err + ".\nClick 'Hide error' to hide for this session.", "Hide error", "Disable symbol parsing", "Open DMP .lst").then((value) => {
+                if (value === "Open DMP .lst") {
                   vscode.workspace.openTextDocument(format({ ...parse(compileCommand.dumpPath), base: '', ext: '.lst' })).then((doc) => {
                     vscode.window.showTextDocument(doc);
                   });
@@ -116,7 +113,7 @@ module.exports = async function updateDiagnostics(args) {
                 }
               });
             }
-            console.log("error", err);
+            console.error("error", err);
           });
         }
         // return early
@@ -127,7 +124,7 @@ module.exports = async function updateDiagnostics(args) {
         errors
           .filter(err => err.length)
           .map((err, i) => parseError(err, i))
-      )
+      );
       // error messages are for multiple files, 
       // so we group them by filename and set the collection accordingly
       const errorMessagesByFile = errorMessages.reduce((acc, err) => {
@@ -174,20 +171,20 @@ module.exports = async function updateDiagnostics(args) {
             vscode.workspace.openTextDocument(compileCommand.listingPath)
               .then((doc) => {
                 vscode.window.showTextDocument(doc);
-              })
+              });
           }
         });
       } else {
-        vscode.window.showErrorMessage("GAMS compilation failed! Check the GAMS output in the terminal. Stdout:" + stdout, );
+        vscode.window.showErrorMessage("GAMS compilation failed! Check the GAMS output in the terminal. Stdout:" + stdout,);
         // focus on the terminal, and send the gams command to the terminal
         terminal?.show(true);
         terminal?.sendText(command);
       }
-      console.log("res", res);
-      console.log("error", error);
-      console.log("stdout", stdout);
+      console.warn("res", res);
+      console.error("error", error);
+      console.warn("stdout", stdout);
     }
   } else {
     collection.clear();
   }
-}
+};

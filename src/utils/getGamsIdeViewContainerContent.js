@@ -42,7 +42,7 @@ https://cdn.jsdelivr.net/npm/simple-undo@1.0.2/lib/simple-undo.min.js
       <vscode-button appearance="icon" aria-label="Pause" @click="stop">
         <span class="codicon codicon-debug-pause"></span>
       </vscode-button>
-      <vscode-text-field v-model="searchString" @input="updateSymbol({name: searchString, fuzzy: true})">
+      <vscode-text-field v-model="searchString" @input="updateSymbol({name: searchString, fuzzy: true})" @input="updateSymbol({name: searchString, fuzzy: true})">
         <span slot="start" placeholder="Search..." class="codicon codicon-search"></span>
         <span slot="end" v-if="searchString" class="codicon codicon-close" @click="searchString = ''"></span>
       </vscode-text-field>
@@ -78,6 +78,17 @@ https://cdn.jsdelivr.net/npm/simple-undo@1.0.2/lib/simple-undo.min.js
 	  			<h3>Domain</h3>
 	  			<p v-for="(elem,i) in domain" :key="'domain_' + i" @click="updateSymbol({name: elem.name})">{{elem.name}}</p>
 	  		</div>
+        <div v-if="subsets" class="gams-badge-div">
+	  			<h3 @click="subsetsShown = !subsetsShown">Subsets</h3>
+          <vscode-badge @click="subsetsShown = !subsetsShown">
+            {{subsets.length}}
+          </vscode-badge>
+	  		</div>
+        <div v-if="subsets && subsetsShown">
+          <div transition="expand">
+	  				<p v-for="(subset,i) in subsets" :key="'subsets_' + i" @click="updateSymbol({name: subset.name})">{{subset.name}}</p>
+	  			</div>
+        </div>
 	  		<h3 v-if="declared" @click="jumpToPosition({file: declared.file,line: declared.line,column: declared.column})">Declared in</h3>
 	  		<p v-if="declared" @click="jumpToPosition({file: declared.file,line: declared.line,column: declared.column})">{{declared.base}}, {{declared.line}}</p>
 	  		<h3 v-if="defined" @click="jumpToPosition({file: defined.file,line: defined.line,column: defined.column})">Defined in</h3>
@@ -242,6 +253,7 @@ https://cdn.jsdelivr.net/npm/simple-undo@1.0.2/lib/simple-undo.min.js
         type: undefined,
         description: undefined,
         domain: undefined,
+        subsetsShown: false,
         declared: undefined,
         defined: undefined,
         assigned: undefined,
@@ -249,7 +261,8 @@ https://cdn.jsdelivr.net/npm/simple-undo@1.0.2/lib/simple-undo.min.js
         implAsn: undefined,
         implAsnShown: false,
         superset: false,
-        subset: {},
+        isSubset: false,
+        subsets: [],
         searchString: '',
         ref: undefined,
         file: undefined,
@@ -326,7 +339,8 @@ https://cdn.jsdelivr.net/npm/simple-undo@1.0.2/lib/simple-undo.min.js
                 "implAsn",
                 "ref",
                 "control",
-                "subset",
+                "subsets",
+                "isSubset",
                 "superset",
                 "symId",
                 "quotedElement",
@@ -364,7 +378,6 @@ https://cdn.jsdelivr.net/npm/simple-undo@1.0.2/lib/simple-undo.min.js
           history.redo(objectUnserializer)
         }
         // update cursor position and or vue symbol
-        console.log(cursorHistory)
         if (cursorHistory && cursorHistory.position) {
           this.jumpToPosition({
             file: cursorHistory.position.file, 
@@ -467,7 +480,7 @@ https://cdn.jsdelivr.net/npm/simple-undo@1.0.2/lib/simple-undo.min.js
           try {
             this.lstTree = JSON.parse(JSON.stringify(this.lstTreeOrig))
           } catch (e) {
-            console.log(e)
+            console.error("gams view error (vue) parsing lst", e)
           }
           // first remove elements that do not have any child entries
           this.lstTree = this.lstTree.filter(entry => entry.entries && entry.entries.length > 0)
@@ -491,5 +504,5 @@ https://cdn.jsdelivr.net/npm/simple-undo@1.0.2/lib/simple-undo.min.js
   app.config.compilerOptions.isCustomElement = (tag) => tag.includes('vscode');
   app.mount('#app');
   
-</script>`
-}
+</script>`;
+};
