@@ -1,6 +1,7 @@
 const vscode = require("vscode");
 const fs = require("fs");
 const { resolve, basename, dirname, parse, sep, format, isAbsolute } = require('path');
+const checkIfExcluded = require('./checkIfExcluded.js');
 const getGamsPath = require('./getGamsPath.js');
 
 module.exports = async function createGamsCommand(docFileName, extraArgs = [], ignoreMultiFileEntryPoint = false) {
@@ -25,12 +26,16 @@ module.exports = async function createGamsCommand(docFileName, extraArgs = [], i
       try {
         fs.mkdirSync(scratchDirectory);
       } catch (error) {
-        console.error("error creating scrdir ", error);
+        console.log(error);
         vscode.window.showErrorMessage(error.message);
       }
     }
   }
     
+  // perform a quick check if the current file is excluded from the multi-file entry point
+  if (!ignoreMultiFileEntryPoint && multiFileEntryPoint) {
+    ignoreMultiFileEntryPoint = checkIfExcluded(docFileName, defaultSettings.get("excludeFromMultiFileEntryPoint"));
+  }
   // if a multi-file entry point is specified, we try to find the file in the workspace
   if (multiFileEntryPoint && vscode.workspace.workspaceFolders && vscode.workspace.workspaceFolders.length && !ignoreMultiFileEntryPoint) {
     // check if multi-file entry point is a an absolute path
@@ -62,20 +67,20 @@ module.exports = async function createGamsCommand(docFileName, extraArgs = [], i
     filePath = dirname(multiFileEntryPointFile);
     // add specific command line arguments for multi-file execution
     // for known GAMS Models
-    const gamsFile = parse(multiFileEntryPointFile).base;
+    const gamsFile = parse(multiFileEntryPointFile).base
 
     if (gamsFile === 'exp_starter.gms') {
       commandLineArguments = commandLineArguments.concat(
         [`--scen=incgen${sep}runInc`, '--ggig=on', '--baseBreed=falsemyBasBreed']
-      );
+      )
     } else if (gamsFile === 'capmod.gms') {
       commandLineArguments = commandLineArguments.concat(
         [`-scrdir="${scratchDirectory}"`, '--scen=fortran']
-      );
+      )
     } else if (gamsFile === 'com_.gms') {
       commandLineArguments = commandLineArguments.concat(
         [`-procdirpath="${scratchDirectory}"`, '--scen=com_inc']
-      );
+      )
     }
   }
 
@@ -92,10 +97,10 @@ module.exports = async function createGamsCommand(docFileName, extraArgs = [], i
   
   let gamsArgs = [`"${gamsFileToExecute}"`, 'PS=0', `-scrdir="${scratchDirectory}"`,
     `--scrdir="${scratchDirectory}"`, `-workdir="${filePath}"`,
-    `-curDir="${filePath}"`];
+    `-curDir="${filePath}"`]
     
-  if (commandLineArguments?.length > 0) gamsArgs = gamsArgs.concat(commandLineArguments);
-  if (extraArgs?.length > 0) gamsArgs = gamsArgs.concat(extraArgs);
+  if (commandLineArguments?.length > 0) gamsArgs = gamsArgs.concat(commandLineArguments)
+  if (extraArgs?.length > 0) gamsArgs = gamsArgs.concat(extraArgs)
   
   return {
     gamsExe: gamsExecutable,
@@ -103,5 +108,5 @@ module.exports = async function createGamsCommand(docFileName, extraArgs = [], i
     listingPath: listingPath,
     gamsFile: fileName,
     filePath: filePath
-  };
-};
+  }
+}
