@@ -2,6 +2,7 @@ const vscode = require("vscode");
 const { resolve, basename, dirname, parse, sep, isAbsolute } = require('path');
 const fs = require("fs");
 const getGamsPath = require('./getGamsPath.js');
+const checkIfExcluded = require('./checkIfExcluded.js');
 
 module.exports = async function createGamsCommand(docFileName, extraArgs = []) {
   // get the default settings, and define the variables
@@ -25,33 +26,18 @@ module.exports = async function createGamsCommand(docFileName, extraArgs = []) {
       try {
         fs.mkdirSync(scratchDirectory);
       } catch (error) {
-        console.error("error creating scrdir", error);
+        console.log(error);
         vscode.window.showErrorMessage(error.message);
       }
     }
   }
 
-  // check if there is a .gams-ide-settings.json file in the same folder, or in a parent folder
-  let settingsFiles = [];
-
-  if (vscode.workspace.workspaceFolders && vscode.workspace.workspaceFolders.length) {
-    const pattern = new vscode.RelativePattern(vscode.workspace.workspaceFolders[0], `**/gams-ide-settings.json`);
-    settingsFiles = await vscode.workspace.findFiles(pattern);
+  let ignoreMultiFileEntryPoint = false;
+  if (multiFileEntryPoint) {
+    ignoreMultiFileEntryPoint = checkIfExcluded(docFileName, defaultSettings.get("excludeFromMultiFileEntryPoint"));
   }
-  // check if a settingsFile exists, if so, read the seetings 
-  // "Gams Executable", "Scratch directory", "Multi-file entry point", 
-  // and "Command Line Arguments - Execution"
-  // and use them to compile and execute the GAMS file
-  if (settingsFiles?.length > 0) {    
-    const settings = JSON.parse(fs.readFileSync(settingsFiles[0].fsPath, 'utf8'));
-    gamsExecutable = settings["Gams Executable"] || gamsExecutable;
-    scratchDirectory = settings["Scratch directory"] || scratchDirectory;
-    multiFileEntryPoint = settings["Multi-file entry point"] || multiFileEntryPoint;
-    commandLineArguments = settings["Command Line Arguments - Compilation"] || commandLineArguments;
-  }
-
   // if a multi-file entry point is specified, we try to find the file in the workspace  
-  if (multiFileEntryPoint && vscode.workspace.workspaceFolders && vscode.workspace.workspaceFolders.length) {
+  if (multiFileEntryPoint && vscode.workspace.workspaceFolders && vscode.workspace.workspaceFolders.length && !ignoreMultiFileEntryPoint) {
     // check if multi-file entry point is a an absolute path
     if (!isAbsolute(multiFileEntryPoint)) {
       // if not, we have to find the absolute path using glob and update the workspace settings accordingly
@@ -81,30 +67,30 @@ module.exports = async function createGamsCommand(docFileName, extraArgs = []) {
     filePath = dirname(multiFileEntryPointFile);
     // add specific command line arguments for multi-file execution
     // for known GAMS Models
-    const gamsFile = parse(multiFileEntryPointFile).base;
+    const gamsFile = parse(multiFileEntryPointFile).base
     
     if (gamsFile === 'exp_starter.gms') {
       commandLineArguments = commandLineArguments.concat(
         [`--scen=incgen${sep}runInc`, '--ggig=on', '--baseBreed=falsemyBasBreed']
-      );
+      )
     } else if (gamsFile === 'capmod.gms') {
       commandLineArguments = commandLineArguments.concat(
         [`-scrdir="${scratchDirectory}"`, '--scen=fortran']
-      );
+      )
     } else if (gamsFile === 'com_.gms') {
       commandLineArguments = commandLineArguments.concat(
         [`-procdirpath="${scratchDirectory}"`, '--scen=com_inc']
-      );
+      )
     }
   }
 
   let gamsFileToExecute = docFileName;
   
-  if (multiFileEntryPointFile) {
+  if (multiFileEntryPointFile && !ignoreMultiFileEntryPoint) {
     gamsFileToExecute = multiFileEntryPointFile;
   }
   // create a random string so that multiple linting processes don't delete each others files
-  const randStr = Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
+  const randStr = Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15)
   let randBasePath = `${scratchDirectory}${sep}${randStr}`;
 
   let gamsArgs = [
@@ -117,10 +103,10 @@ module.exports = async function createGamsCommand(docFileName, extraArgs = []) {
     `--scrdir="${scratchDirectory}"`, 
     `-workdir="${filePath}"`,
     `-curDir="${filePath}"`
-  ];
+  ]
 
-  if (commandLineArguments?.length > 0) gamsArgs = gamsArgs.concat(commandLineArguments);
-  if (extraArgs?.length > 0) gamsArgs = gamsArgs.concat(extraArgs);
+  if (commandLineArguments?.length > 0) gamsArgs = gamsArgs.concat(commandLineArguments)
+  if (extraArgs?.length > 0) gamsArgs = gamsArgs.concat(extraArgs)
 
   return {
     gamsExe: gamsExecutable,
@@ -133,5 +119,5 @@ module.exports = async function createGamsCommand(docFileName, extraArgs = []) {
     scratchDirectory: scratchDirectory,
     gamsFile: fileName,
     filePath: filePath
-  };
-};
+  }
+}
