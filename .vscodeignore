@@ -2,6 +2,7 @@ node_modules
 out/
 src/**
 test/**
+scrdir/**
 jsconfig.json
 .vscode/**
 .vscode-test/**

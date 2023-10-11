@@ -2,7 +2,7 @@
   "name": "gams-ide",
   "displayName": "gams-ide",
   "description": "A GAMS integrated development environment for vscode",
-  "version": "0.0.54",
+  "version": "0.0.6",
   "repository": {
     "type": "git",
     "url": "https://github.com/chrispahm/gams-ide"
@@ -188,13 +188,14 @@
     "@vscode/test-electron": "^2.1.5",
     "eslint": "^8.20.0",
     "mocha": "^10.0.0",
+    "peggy": "^3.0.2",
     "typescript": "^4.7.4",
     "vsce": "^2.15.0",
     "webpack": "^5.88.2",
     "webpack-cli": "^5.1.4"
   },
   "dependencies": {
-    "@vscode/codicons": "^0.0.32",
+    "@vscode/codicons": "^0.0.33",
     "glob": "^10.2.7",
     "lodash": "^4.17.21",
     "readline-specific": "^1.0.4",
