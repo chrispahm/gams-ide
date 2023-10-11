@@ -12,13 +12,13 @@ module.exports = async function clearScrdir() {
       await fs.access(scratchDirectory);
       scratchDirectoryExists = true;
     } catch (error) {
-      console.log(error);
+      console.error("error in clearScrdir: ", error);
     }
     if (!scratchDirectoryExists) {
       try {
         await fs.mkdir(scratchDirectory);
       } catch (error) {
-        console.log(error);
+        console.error("error in clearScrdir: ", error);
         vscode.window.showErrorMessage(error.message);
       }
     }
@@ -28,10 +28,10 @@ module.exports = async function clearScrdir() {
 
   for (const file of files) {
     try {
-      await fs.unlink(`${scratchDirectory}/${file}`);
+      await fs.rm(`${scratchDirectory}/${file}`, { force: true, recursive: true });
     } catch (error) {
-      console.log(error);
+      console.error("error in clearScrdir: ", error);
       vscode.window.showErrorMessage("Could not delete file " + file);
     }
   }
-}
+};
