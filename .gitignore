@@ -9,3 +9,5 @@ node_modules
 *.lst
 *.err
 scrdir/*
+docs/.vitepress/cache
+docs/.vitepress/dist

@@ -4,16 +4,18 @@ import { defineConfig } from 'vitepress'
 export default defineConfig({
   title: "GAMS-IDE",
   description: "Documentation for the VSCode gams-ide extension",
+  base: '/gams-ide/',
   themeConfig: {
     // https://vitepress.dev/reference/default-theme-config
     nav: [
       { text: 'Guide', link: '/overview' },
       { text: 'VSCode Marketplace', link: 'https://marketplace.visualstudio.com/vscode' }
     ],
-    base: '/gams-ide/',
+    
     editLink: {
       pattern: 'https://github.com/chrispahm/gams-ide/edit/main/docs/:path'
     },
+    
     sidebar: [
       {
         text: 'Guide',
@@ -103,6 +105,10 @@ export default defineConfig({
 
     socialLinks: [
       { icon: 'github', link: 'https://github.com/vuejs/vitepress' }
-    ]
+    ],
+
+    search: {
+      provider: 'local'
+    }
   }
 })
