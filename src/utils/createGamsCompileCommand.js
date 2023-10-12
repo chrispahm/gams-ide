@@ -67,20 +67,20 @@ module.exports = async function createGamsCommand(docFileName, extraArgs = []) {
     filePath = dirname(multiFileEntryPointFile);
     // add specific command line arguments for multi-file execution
     // for known GAMS Models
-    const gamsFile = parse(multiFileEntryPointFile).base
+    const gamsFile = parse(multiFileEntryPointFile).base;
     
     if (gamsFile === 'exp_starter.gms') {
       commandLineArguments = commandLineArguments.concat(
         [`--scen=incgen${sep}runInc`, '--ggig=on', '--baseBreed=falsemyBasBreed']
-      )
+      );
     } else if (gamsFile === 'capmod.gms') {
       commandLineArguments = commandLineArguments.concat(
         [`-scrdir="${scratchDirectory}"`, '--scen=fortran']
-      )
+      );
     } else if (gamsFile === 'com_.gms') {
       commandLineArguments = commandLineArguments.concat(
         [`-procdirpath="${scratchDirectory}"`, '--scen=com_inc']
-      )
+      );
     }
   }
 
@@ -90,7 +90,7 @@ module.exports = async function createGamsCommand(docFileName, extraArgs = []) {
     gamsFileToExecute = multiFileEntryPointFile;
   }
   // create a random string so that multiple linting processes don't delete each others files
-  const randStr = Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15)
+  const randStr = Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
   let randBasePath = `${scratchDirectory}${sep}${randStr}`;
 
   let gamsArgs = [
@@ -103,10 +103,10 @@ module.exports = async function createGamsCommand(docFileName, extraArgs = []) {
     `--scrdir="${scratchDirectory}"`, 
     `-workdir="${filePath}"`,
     `-curDir="${filePath}"`
-  ]
+  ];
 
-  if (commandLineArguments?.length > 0) gamsArgs = gamsArgs.concat(commandLineArguments)
-  if (extraArgs?.length > 0) gamsArgs = gamsArgs.concat(extraArgs)
+  if (commandLineArguments?.length > 0) gamsArgs = gamsArgs.concat(commandLineArguments);
+  if (extraArgs?.length > 0) gamsArgs = gamsArgs.concat(extraArgs);
 
   return {
     gamsExe: gamsExecutable,
@@ -119,5 +119,5 @@ module.exports = async function createGamsCommand(docFileName, extraArgs = []) {
     scratchDirectory: scratchDirectory,
     gamsFile: fileName,
     filePath: filePath
-  }
-}
+  };
+};
