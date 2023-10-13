@@ -18,7 +18,7 @@ module.exports = async function getGamsPath() {
       const openSettings = 'Open Settings';
       vscode.window.showInformationMessage(`Found GAMS executable at ${gamsExecutable}, now stored in workspace settings.`, openSettings).then(selection => {
         if (selection === openSettings) {
-          vscode.commands.executeCommand('workbench.action.openSettings', '@ext:GAMS.gams-ide gamsExecutable');
+          vscode.commands.executeCommand('workbench.action.openSettings', 'gamsIde.gamsExecutable');
         }
       });
     }
@@ -70,7 +70,7 @@ module.exports = async function getGamsPath() {
       const openSettings = 'Open Settings';
       vscode.window.showInformationMessage(`Found GAMS executable at ${gamsExecutable}, now stored in workspace settings.`, openSettings).then(selection => {
         if (selection === openSettings) {
-          vscode.commands.executeCommand('workbench.action.openSettings', '@ext:GAMS.gams-ide gamsExecutable');
+          vscode.commands.executeCommand('workbench.action.openSettings', 'gamsIde.gamsExecutable');
         }
       });
 
@@ -82,7 +82,7 @@ module.exports = async function getGamsPath() {
     const openSettings = 'Open Settings';
     vscode.window.showErrorMessage(`GAMS executable not found. Please update the workspace settings.`, openSettings).then(selection => {
       if (selection === openSettings) {
-        vscode.commands.executeCommand('workbench.action.openSettings', '@ext:GAMS.gams-ide gamsExecutable');
+        vscode.commands.executeCommand('workbench.action.openSettings', 'gamsIde.gamsExecutable');
       }
     });
   }
