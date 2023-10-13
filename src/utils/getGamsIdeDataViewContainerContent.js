@@ -1,5 +1,5 @@
-module.exports = function getGamsIdeSymbolViewContainerContent(options) {
-  const { webviewToolkitUri, codiconsUri, isSymbolParsingEnabled } = options;
+module.exports = function getGamsIdeDataViewContainerContent(options) {
+  const { webviewToolkitUri, codiconsUri, isDataParsingEnabled } = options;
 
   return `
   <!DOCTYPE html>
@@ -7,7 +7,7 @@ module.exports = function getGamsIdeSymbolViewContainerContent(options) {
   <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>GAMS IDE Symbol View</title>
+    <title>GAMS IDE DATA VIEW</title>
     <link rel="stylesheet" href="${codiconsUri}">
     <script type="importmap">
       {
@@ -53,7 +53,7 @@ module.exports = function getGamsIdeSymbolViewContainerContent(options) {
       </vscode-dropdown>
     </div>
     <pre id="gams-symbols-content" style="padding: 40px 0px;">
-      ${ !isSymbolParsingEnabled ? "Symbol parsing is disabled. <a class='link' onclick='enableSymbolParsing()'>Click here to enable it.</a>" : "No data to show. Click on a symbol to get started!" }
+      ${ !isDataParsingEnabled ? "Symbol parsing is disabled. <a class='link' onclick='enableSymbolParsing()'>Click here to enable it.</a>" : "No data to show. Click on a symbol to get started!" }
     </pre>
   </body>
   <script type="module">
@@ -92,8 +92,8 @@ module.exports = function getGamsIdeSymbolViewContainerContent(options) {
     window.addEventListener('message', event => {
       const message = event.data; // The json data that the extension sent
       switch (message.command) {
-        case 'isSymbolParsingEnabled':
-          if (message.data.isSymbolParsingEnabled) {
+        case 'isDataParsingEnabled':
+          if (message.data.isDataParsingEnabled) {
             content.innerHTML = "No data to show. Click on a symbol to get started!";
           } else {
             content.innerHTML = "Symbol parsing is disabled. <a class='link' onclick='enableSymbolParsing()'>Click here to enable it.</a>";
@@ -155,5 +155,5 @@ module.exports = function getGamsIdeSymbolViewContainerContent(options) {
     });
   </script>
   </html>
-  `
-}
+  `;
+};
