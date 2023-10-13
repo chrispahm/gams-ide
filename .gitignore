@@ -11,3 +11,4 @@ node_modules
 scrdir/*
 docs/.vitepress/cache
 docs/.vitepress/dist
+dist
