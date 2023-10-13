@@ -120,6 +120,11 @@ module.exports = async function updateDiagnostics(args) {
         return;
       }
       let errors = errorFileContents.split(/\r\n?|\n/).slice(1);
+      // get max errors to display from settings
+      const maxErrorsToDisplay = vscode.workspace.getConfiguration("gamsIde").get("maxErrorsToDisplay");
+      if (maxErrorsToDisplay > 0) {
+        errors = errors.slice(0, maxErrorsToDisplay);
+      }
       const errorMessages = await Promise.all(
         errors
           .filter(err => err.length)
@@ -138,21 +143,6 @@ module.exports = async function updateDiagnostics(args) {
         const uri = vscode.Uri.file(file);
         collection.set(uri, errorMessagesByFile[file]);
       });
-
-      // open the Problems tab, and jump to the first error
-      // if the user has the setting enabled
-      // if (vscode.workspace.getConfiguration("gams").get("openProblemsTabOnCompile")) {
-      // vscode.commands.executeCommand("workbench.panel.markers.view.focus");
-      if (errorMessages.length) {
-        /*
-        const firstError = errorMessages[0];
-        const firstErrorUri = vscode.Uri.file(firstError.errFile);
-        const firstErrorPosition = new vscode.Position(firstError.errLine - 1, firstError.errCol - 1);
-        const firstErrorRange = new vscode.Range(firstErrorPosition, firstErrorPosition);
-        vscode.window.showTextDocument(firstErrorUri, { selection: firstErrorRange });
-        */
-      }
-      //}      
     } catch (error) {
       // show error in VS Code output
       // and add button to open the lst file
