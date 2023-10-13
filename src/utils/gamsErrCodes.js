@@ -754,4 +754,4 @@ module.exports = {
   '829': 'The first domain set on a permutation cannot be the universe (*)',
   '840': 'Last unused message: change maxerrmsg in ctv.pas',
   '999': '*** SENTINEL ***         1         2         3         4         5         6123456789012345678901234567890123456789012345678901234567890123456789lines are truncated beyond 69 when read into gams'
-}
+};
