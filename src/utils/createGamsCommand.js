@@ -67,7 +67,7 @@ module.exports = async function createGamsCommand(docFileName, extraArgs = [], i
     filePath = dirname(mainGmsFilePath);
     // add specific command line arguments for multi-file execution
     // for known GAMS Models
-    const gamsFile = parse(multiFileEntryPointFile).base;
+    const gamsFile = parse(mainGmsFilePath).base;
 
     if (gamsFile === 'exp_starter.gms') {
       commandLineArguments = commandLineArguments.concat(
