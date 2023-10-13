@@ -54,7 +54,7 @@ module.exports = async function createGamsCommand(docFileName, extraArgs = []) {
         const removeMultiFileEntry = 'Remove multi-file entry point';
         await vscode.window.showErrorMessage(`Multi-file entry point ${multiFileEntryPoint} not found in workspace. Please update the workspace settings, or disable multi-file entry point.`, openSettings).then(selection => {
           if (selection === openSettings) {
-            vscode.commands.executeCommand('workbench.action.openSettings', '@ext:GAMS.gams-ide multi_fileEntryPoint');
+            vscode.commands.executeCommand('workbench.action.openSettings', 'gamsIde.multi_fileEntryPoint');
           } else if (selection === removeMultiFileEntry) {
             vscode.workspace.getConfiguration().update("gamsIde.multi_fileEntryPoint", "", vscode.ConfigurationTarget.Workspace);
           }
