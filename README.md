@@ -18,7 +18,7 @@ You can download the latest version of the package from the [releases page]() an
 In order to function properly, gams-ide needs a valid GAMS executable. It will check for the latest GAMS version found in the PATH variable and the default install directories (Win: `C:/GAMS/*/*/`, `N:/soft/GAMS*/`, OSX: `/Applications/GAMS*/sysdir/`, `/Applications/GAMS*/Resource/sysdir/`).
 If no installation was found in the default directories, you need to specify one in the packages settings pane (as shown in the picture above). `gams-ide` runs on top of a regular GAMS installation, therefore the general [GAMS licensing](https://www.gams.com/latest/docs/UG_License.html) restrictions apply.
 
-gams-ide will automatically check if your GAMS file is part of a [GGIG](http://www.ilr.uni-bonn.de/em/rsrch/ggig/ggig_e.htm) project and will do the necessary adjustments by itself. If you are working on a (non GGIG) multi-file model and want to specify the GAMS entry file, you may do so in the package settings pane. Note that you don't need to specify a path, but rather the actual entry point file name (e.g. entryFile.gms). gams-ide will search for this file in the parent directories.
+If you are working on a multi-file model and want to specify the GAMS entry file, you may do so in the package settings pane. Note that you don't need to specify a path, but rather the actual main GAMS file name (e.g. entryFile.gms). gams-ide will search for this file in the parent directories.
 
 ## Usage
 

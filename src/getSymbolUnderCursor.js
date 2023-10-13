@@ -4,7 +4,7 @@ const gamsParser = require('./utils/gamsParser.js');
 module.exports = async function getSymbolUnderCursor(args) {
   const {
     event,
-    gamsSymbolView,
+    gamsDataView,
     state,
     gamsView
   } = args;
@@ -113,14 +113,14 @@ module.exports = async function getSymbolUnderCursor(args) {
         }
       });
     }
-    // show the symbol view
+    // show the data view
     //if (vscode.window.state.focused) {
     //   terminal_symbols.show(true);
     //}
-    // only update symbol view if it enabled in the settings
-    const isSymbolParsingEnabled = vscode.workspace.getConfiguration("gamsIde").get("parseSymbolValues");
-    if (matchingRef && gamsSymbolView && isSymbolParsingEnabled) {
-      gamsSymbolView.webview.postMessage({
+    // only update data view if it enabled in the settings
+    const isDataParsingEnabled = vscode.workspace.getConfiguration("gamsIde").get("parseGamsData");
+    if (matchingRef && gamsDataView && isDataParsingEnabled) {
+      gamsDataView.webview.postMessage({
         command: "updateSolveData",
         data: {
           solves: solves,
@@ -128,8 +128,8 @@ module.exports = async function getSymbolUnderCursor(args) {
           data: matchingRef.data
         },
       });
-    } else if (gamsSymbolView && isSymbolParsingEnabled) {
-      gamsSymbolView.webview.postMessage({
+    } else if (gamsDataView && isDataParsingEnabled) {
+      gamsDataView.webview.postMessage({
         command: "updateSymbolError",
         data: {
           symbol: word

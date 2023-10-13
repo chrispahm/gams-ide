@@ -4,7 +4,7 @@ const updateDiagnostics = require("./src/diagnostics");
 const runGams = require("./src/runGams");
 const getSymbolUnderCursor = require("./src/getSymbolUnderCursor");
 const getGamsIdeViewContainerContent = require("./src/utils/getGamsIdeViewContainerContent");
-const getGamsIdeSymbolViewContainerContent = require("./src/utils/getGamsIdeSymbolViewContainerContent");
+const getGamsIdeDataViewContainerContent = require("./src/utils/getGamsIdeDataViewContainerContent");
 const debouncedListenToLstFiles = require("./src/parseLstFiles");
 const provideGAMSCompletionItems = require("./src/provideGAMSCompletionItems");
 const provideGAMSSignatureHelp = require("./src/provideGAMSSignatureHelp");
@@ -12,7 +12,7 @@ const State = require("./src/State.js");
 
 let terminal;
 let gamsView;
-let gamsSymbolView;
+let gamsDataView;
 
 
 async function activate(context) {
@@ -32,7 +32,7 @@ async function activate(context) {
     const document = vscode.window.activeTextEditor.document;
     // check if the active editor is a GAMS file
     if (document.languageId === "gams") {
-      await updateDiagnostics({ document, collection, gamsSymbolView, state, terminal });
+      await updateDiagnostics({ document, collection, gamsDataView, state, terminal });
     } 
   }
 
@@ -44,7 +44,7 @@ async function activate(context) {
         await updateDiagnostics({
           document: editor.document,
           collection,
-          gamsSymbolView,
+          gamsDataView,
           state,
           terminal
         });
@@ -52,7 +52,7 @@ async function activate(context) {
         getSymbolUnderCursor({ event: {
           textEditor: editor,
           selections: editor.selections,
-        }, gamsSymbolView, state, gamsView });
+        }, gamsDataView, state, gamsView });
       } else if (editor && editor.document.fileName.toLowerCase().endsWith('.lst')) {
         isListing = true;
         await debouncedListenToLstFiles({
@@ -78,7 +78,7 @@ async function activate(context) {
   context.subscriptions.push(
     vscode.workspace.onDidSaveTextDocument(async (document) => {
       if (document && document.languageId === "gams") {
-        await updateDiagnostics({ document, collection, gamsSymbolView, state, terminal });
+        await updateDiagnostics({ document, collection, gamsDataView, state, terminal });
       }
     })
   );
@@ -87,7 +87,7 @@ async function activate(context) {
   context.subscriptions.push(
     vscode.window.onDidChangeTextEditorSelection(async (event) => {
       if (event && event.textEditor.document.languageId === "gams" && event.kind) {
-        getSymbolUnderCursor({ event, gamsSymbolView, state, gamsView });
+        getSymbolUnderCursor({ event, gamsDataView, state, gamsView });
       }
     })
   );
@@ -245,7 +245,7 @@ async function activate(context) {
                 getSymbolUnderCursor({ event: {
                   textEditor: vscode.window.activeTextEditor,
                   selections: vscode.window.activeTextEditor?.selections,
-                }, gamsSymbolView, state, gamsView });
+                }, gamsDataView, state, gamsView });
                 const curSymbol = state.get("curSymbol");
                 curSymbol.domain = curSymbol.domain?.map((domain) => ({ name: domain.name }));
                 curSymbol.subsets = curSymbol.subsets?.map((subset) => ({ name: subset.name }));
@@ -274,12 +274,12 @@ async function activate(context) {
     })
   );
 
-  // gams symbol view
-  function createGamsSymbolView() {
+  // gams data view
+  function createGamsDataView() {
     return {
       // Implement the resolveWebviewView method
       resolveWebviewView(webviewView) {
-        gamsSymbolView = webviewView;
+        gamsDataView = webviewView;
         // Set the webview options
         webviewView.webview.options = {
           enableScripts: true
@@ -293,63 +293,63 @@ async function activate(context) {
           )
         );
         // Set the webview content
-        webviewView.webview.html = getGamsIdeSymbolViewContainerContent({
+        webviewView.webview.html = getGamsIdeDataViewContainerContent({
           webviewToolkitUri,
           codiconsUri,
-          isSymbolParsingEnabled: vscode.workspace.getConfiguration("gamsIde").get("parseSymbolValues")
+          isDataParsingEnabled: vscode.workspace.getConfiguration("gamsIde").get("parseGamsData")
         });
 
         webviewView.webview.onDidReceiveMessage(async message => {
           switch (message.command) {
             case 'enableSymbolParsing':
-              vscode.workspace.getConfiguration("gamsIde").update("parseSymbolValues", true);
+              vscode.workspace.getConfiguration("gamsIde").update("parseGamsData", true);
               break;
           }
         });
       }
     };
   }
-  // add the gams symbol view if enabled
-  let showSymbolViewCommandDisposable, gamsSymbolViewDisposable;
-  // create the gams symbol view
-  gamsSymbolViewDisposable = vscode.window.registerWebviewViewProvider('gamsIdeSymbolView', createGamsSymbolView());
-  context.subscriptions.push(gamsSymbolViewDisposable);
+  // add the gams data view if enabled
+  let showDataViewCommandDisposable, gamsDataViewDisposable;
+  // create the gams data view
+  gamsDataViewDisposable = vscode.window.registerWebviewViewProvider('gamsIdeDataView', createGamsDataView());
+  context.subscriptions.push(gamsDataViewDisposable);
 
-  // add a command to open the gams symbol view sidebar
-  showSymbolViewCommandDisposable = vscode.commands.registerCommand("gams.openSymbolPanel", () => {
+  // add a command to open the gams data view sidebar
+  showDataViewCommandDisposable = vscode.commands.registerCommand("gams.openDataPanel", () => {
     // make sure the bottom panel is open
     vscode.commands.executeCommand("workbench.action.togglePanel");
     // check if parsing symbols is enabled
-    if (!vscode.workspace.getConfiguration("gamsIde").get("parseSymbolValues")) {
-      vscode.window.showErrorMessage("Symbol parsing is disabled.", "Enable symbol parsing").then((value) => {
-        if (value === "Enable symbol parsing") {
-          vscode.workspace.getConfiguration("gamsIde").update("parseSymbolValues", true);
+    if (!vscode.workspace.getConfiguration("gamsIde").get("parseGamsData")) {
+      vscode.window.showErrorMessage("Data parsing is disabled.", "Enable data parsing").then((value) => {
+        if (value === "Enable data parsing") {
+          vscode.workspace.getConfiguration("gamsIde").update("parseGamsData", true);
         }
       });
     } else {
-      gamsSymbolView?.show();
+      gamsDataView?.show();
     }
   });
 
-  context.subscriptions.push(showSymbolViewCommandDisposable);
+  context.subscriptions.push(showDataViewCommandDisposable);
 
-  // listen to changes to the parseSymbolValues setting
+  // listen to changes to the parseGamsData setting
   vscode.workspace.onDidChangeConfiguration((e) => {
-    if (e.affectsConfiguration("gamsIde.parseSymbolValues")) {      
-      // send a message to the symbol view to update the content
-      const isSymbolParsingEnabled = vscode.workspace.getConfiguration("gamsIde").get("parseSymbolValues");
-      gamsSymbolView?.webview.postMessage({
-        command: "isSymbolParsingEnabled",
+    if (e.affectsConfiguration("gamsIde.parseGamsData")) {      
+      // send a message to the data view to update the content
+      const isDataParsingEnabled = vscode.workspace.getConfiguration("gamsIde").get("parseGamsData");
+      gamsDataView?.webview.postMessage({
+        command: "isDataParsingEnabled",
         data: {
-          isSymbolParsingEnabled
+          isDataParsingEnabled
         }
       });
 
-      if (isSymbolParsingEnabled) {
-        // re-run diagnostics so that the symbol view is updated
+      if (isDataParsingEnabled) {
+        // re-run diagnostics so that the data view is updated
         const editor = vscode.window.activeTextEditor;
         if (editor && editor.document.languageId === "gams") {
-          updateDiagnostics({ document: editor.document, collection, gamsSymbolView, state, terminal });
+          updateDiagnostics({ document: editor.document, collection, gamsDataView, state, terminal });
         }
       }
     }

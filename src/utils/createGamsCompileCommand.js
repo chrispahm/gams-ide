@@ -9,8 +9,8 @@ module.exports = async function createGamsCommand(docFileName, extraArgs = []) {
   const defaultSettings = vscode.workspace.getConfiguration("gamsIde");
   let gamsExecutable = await getGamsPath();
   let scratchDirectory = defaultSettings.get("scratchDirectory");
-  let multiFileEntryPoint = defaultSettings.get("multi_fileEntryPoint");
-  let multiFileEntryPointFile = '';
+  let mainGmsFile = defaultSettings.get("mainGmsFile");
+  let mainGmsFilePath = '';
   let commandLineArguments = defaultSettings.get(
     "commandLineArguments_compilation"
   ) || [];
@@ -32,42 +32,42 @@ module.exports = async function createGamsCommand(docFileName, extraArgs = []) {
     }
   }
 
-  let ignoreMultiFileEntryPoint = false;
-  if (multiFileEntryPoint) {
-    ignoreMultiFileEntryPoint = checkIfExcluded(docFileName, defaultSettings.get("excludeFromMultiFileEntryPoint"));
+  let ignoreMainGmsFile = false;
+  if (mainGmsFile) {
+    ignoreMainGmsFile = checkIfExcluded(docFileName, defaultSettings.get("excludeFromMainGmsFile"));
   }
-  // if a multi-file entry point is specified, we try to find the file in the workspace  
-  if (multiFileEntryPoint && vscode.workspace.workspaceFolders && vscode.workspace.workspaceFolders.length && !ignoreMultiFileEntryPoint) {
-    // check if multi-file entry point is a an absolute path
-    if (!isAbsolute(multiFileEntryPoint)) {
+  // if a main GMS file is specified, we try to find the file in the workspace  
+  if (mainGmsFile && vscode.workspace.workspaceFolders && vscode.workspace.workspaceFolders.length && !ignoreMainGmsFile) {
+    // check if main GMS file is a an absolute path
+    if (!isAbsolute(mainGmsFile)) {
       // if not, we have to find the absolute path using glob and update the workspace settings accordingly
-      const pattern = new vscode.RelativePattern(vscode.workspace.workspaceFolders[0], `**/${multiFileEntryPoint}`);
+      const pattern = new vscode.RelativePattern(vscode.workspace.workspaceFolders[0], `**/${mainGmsFile}`);
       const files = await vscode.workspace.findFiles(pattern);
 
       if (files && files.length > 0) {
-        multiFileEntryPointFile = files[0].fsPath;
+        mainGmsFilePath = files[0].fsPath;
         // update the workspace settings
-        vscode.workspace.getConfiguration().update("gamsIde.multi_fileEntryPoint", multiFileEntryPointFile, vscode.ConfigurationTarget.Workspace);
+        vscode.workspace.getConfiguration().update("gamsIde.mainGmsFile", mainGmsFilePath, vscode.ConfigurationTarget.Workspace);
       } else {
         // Show error message and button with link to settings
         const openSettings = 'Open Settings';
-        const removeMultiFileEntry = 'Remove multi-file entry point';
-        await vscode.window.showErrorMessage(`Multi-file entry point ${multiFileEntryPoint} not found in workspace. Please update the workspace settings, or disable multi-file entry point.`, openSettings).then(selection => {
+        const removeMainGmsFile = 'Remove main GMS file';
+        await vscode.window.showErrorMessage(`main GMS file ${mainGmsFile} not found in workspace. Please update the workspace settings, or disable main GMS file.`, openSettings).then(selection => {
           if (selection === openSettings) {
-            vscode.commands.executeCommand('workbench.action.openSettings', 'gamsIde.multi_fileEntryPoint');
-          } else if (selection === removeMultiFileEntry) {
-            vscode.workspace.getConfiguration().update("gamsIde.multi_fileEntryPoint", "", vscode.ConfigurationTarget.Workspace);
+            vscode.commands.executeCommand('workbench.action.openSettings', 'gamsIde.mainGmsFile');
+          } else if (selection === removeMainGmsFile) {
+            vscode.workspace.getConfiguration().update("gamsIde.mainGmsFile", "", vscode.ConfigurationTarget.Workspace);
           }
         });
       }
     }
-    multiFileEntryPointFile = multiFileEntryPoint;
-    // overwrite the file name and path with the multi-file entry point    
-    fileName = basename(multiFileEntryPointFile);
-    filePath = dirname(multiFileEntryPointFile);
+    mainGmsFilePath = mainGmsFile;
+    // overwrite the file name and path with the main GMS file    
+    fileName = basename(mainGmsFilePath);
+    filePath = dirname(mainGmsFilePath);
     // add specific command line arguments for multi-file execution
     // for known GAMS Models
-    const gamsFile = parse(multiFileEntryPointFile).base;
+    const gamsFile = parse(mainGmsFilePath).base;
     
     if (gamsFile === 'exp_starter.gms') {
       commandLineArguments = commandLineArguments.concat(
@@ -86,8 +86,8 @@ module.exports = async function createGamsCommand(docFileName, extraArgs = []) {
 
   let gamsFileToExecute = docFileName;
   
-  if (multiFileEntryPointFile && !ignoreMultiFileEntryPoint) {
-    gamsFileToExecute = multiFileEntryPointFile;
+  if (mainGmsFilePath && !ignoreMainGmsFile) {
+    gamsFileToExecute = mainGmsFilePath;
   }
   // create a random string so that multiple linting processes don't delete each others files
   const randStr = Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
