@@ -8,14 +8,14 @@ async function openListing(listingPath) {
   vscode.window.showTextDocument(doc);
 }
 
-module.exports = async function runGams(terminal, compileOnly = false, ignoreMultiFileEntryPoint = false) {
+module.exports = async function runGams(terminal, compileOnly = false, ignoreMainGmsFile = false) {
   const editor = vscode.window.activeTextEditor;
   if (editor && (editor.document.languageId === "gams" || editor.document.fileName.toLowerCase().endsWith('.lst'))) {
     let fileToRun = editor.document.fileName;
     if (editor.document.fileName.toLowerCase().endsWith('.lst')) {
       fileToRun = path.format({ ...path.parse(fileToRun), base: '', ext: '.gms' });
     }
-    const gamsCommand = await createGamsCommand(fileToRun, ["lo=3", compileOnly ? "a=c" : ""], ignoreMultiFileEntryPoint);
+    const gamsCommand = await createGamsCommand(fileToRun, ["lo=3", compileOnly ? "a=c" : ""], ignoreMainGmsFile);
     // if the terminal has been closed, create a new one
     if (terminal.exitStatus !== undefined) {
       terminal = vscode.window.createTerminal("GAMS");

@@ -24,11 +24,11 @@ module.exports = async function updateDiagnostics(args) {
     terminal
   } = args;
 
-  const shouldParseSymbolValues = vscode.workspace.getConfiguration("gamsIde").get("parseSymbolValues");
+  const shouldParseGamsData = vscode.workspace.getConfiguration("gamsIde").get("parseGamsData");
 
   if (document && collection) {
     // get the compile statement for the current document
-    const compileCommand = await createGamsCompileCommand(document.fileName, [shouldParseSymbolValues ? "dumpopt=11" : ""]);
+    const compileCommand = await createGamsCompileCommand(document.fileName, [shouldParseGamsData ? "dumpopt=11" : ""]);
     // run the compile command
     const command = `${compileCommand.gamsExe} ${compileCommand.gamsArgs.join(" ")}`;
     let res;
@@ -67,7 +67,7 @@ module.exports = async function updateDiagnostics(args) {
       if (errorFileContents.split(/\n/).length <= 2) {
         collection.clear();
         // only parse symbol values if the according setting is enabled
-        if (shouldParseSymbolValues) {
+        if (shouldParseGamsData) {
           // and the gdx smybol container
           // we mutate the  reference tree with symbol values, and explicitly do not await
           // this potentially long-running process in order to return the diagnostic
@@ -100,16 +100,16 @@ module.exports = async function updateDiagnostics(args) {
           }).catch(err => {
             // show error in VS Code output
             // and add button to open the dmp file
-            if (!state.get("ignoreSymbolValueParsingError")) {
-              vscode.window.showWarningMessage("GAMS Symbols: " + err + ".\nClick 'Hide error' to hide for this session.", "Hide error", "Disable symbol parsing", "Open DMP .lst").then((value) => {
+            if (!state.get("ignoreDataValueParsingError")) {
+              vscode.window.showWarningMessage("GAMS Symbols: " + err + ".\nClick 'Hide error' to hide for this session.", "Hide error", "Disable data parsing", "Open DMP .lst").then((value) => {
                 if (value === "Open DMP .lst") {
                   vscode.workspace.openTextDocument(format({ ...parse(compileCommand.dumpPath), base: '', ext: '.lst' })).then((doc) => {
                     vscode.window.showTextDocument(doc);
                   });
-                } else if (value === "Disable symbol parsing") {
-                  vscode.workspace.getConfiguration("gamsIde").update("parseSymbolValues", false);
+                } else if (value === "Disable data parsing") {
+                  vscode.workspace.getConfiguration("gamsIde").update("parseGamsData", false);
                 } else if (value === "Hide error") {
-                  state.update("ignoreSymbolValueParsingError", true);
+                  state.update("ignoreDataValueParsingError", true);
                 }
               });
             }
