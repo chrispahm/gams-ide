@@ -54,7 +54,7 @@ module.exports = async function createGamsCommand(docFileName, extraArgs = [], i
         const removeMultiFileEntry = 'Remove multi-file entry point';
         await vscode.window.showErrorMessage(`Multi-file entry point ${multiFileEntryPoint} not found in workspace. Please update the workspace settings, or disable multi-file entry point.`, openSettings).then(selection => {
           if (selection === openSettings) {
-            vscode.commands.executeCommand('workbench.action.openSettings', '@ext:GAMS.gams-ide multi_fileEntryPoint');
+            vscode.commands.executeCommand('workbench.action.openSettings', 'gamsIde.multi_fileEntryPoint');
           } else if (selection === removeMultiFileEntry) {
             vscode.workspace.getConfiguration().update("gamsIde.multi_fileEntryPoint", "", vscode.ConfigurationTarget.Workspace);
           }
@@ -67,20 +67,20 @@ module.exports = async function createGamsCommand(docFileName, extraArgs = [], i
     filePath = dirname(multiFileEntryPointFile);
     // add specific command line arguments for multi-file execution
     // for known GAMS Models
-    const gamsFile = parse(multiFileEntryPointFile).base
+    const gamsFile = parse(multiFileEntryPointFile).base;
 
     if (gamsFile === 'exp_starter.gms') {
       commandLineArguments = commandLineArguments.concat(
         [`--scen=incgen${sep}runInc`, '--ggig=on', '--baseBreed=falsemyBasBreed']
-      )
+      );
     } else if (gamsFile === 'capmod.gms') {
       commandLineArguments = commandLineArguments.concat(
         [`-scrdir="${scratchDirectory}"`, '--scen=fortran']
-      )
+      );
     } else if (gamsFile === 'com_.gms') {
       commandLineArguments = commandLineArguments.concat(
         [`-procdirpath="${scratchDirectory}"`, '--scen=com_inc']
-      )
+      );
     }
   }
 
@@ -97,10 +97,10 @@ module.exports = async function createGamsCommand(docFileName, extraArgs = [], i
   
   let gamsArgs = [`"${gamsFileToExecute}"`, 'PS=0', `-scrdir="${scratchDirectory}"`,
     `--scrdir="${scratchDirectory}"`, `-workdir="${filePath}"`,
-    `-curDir="${filePath}"`]
+    `-curDir="${filePath}"`];
     
-  if (commandLineArguments?.length > 0) gamsArgs = gamsArgs.concat(commandLineArguments)
-  if (extraArgs?.length > 0) gamsArgs = gamsArgs.concat(extraArgs)
+  if (commandLineArguments?.length > 0) gamsArgs = gamsArgs.concat(commandLineArguments);
+  if (extraArgs?.length > 0) gamsArgs = gamsArgs.concat(extraArgs);
   
   return {
     gamsExe: gamsExecutable,
@@ -108,5 +108,5 @@ module.exports = async function createGamsCommand(docFileName, extraArgs = [], i
     listingPath: listingPath,
     gamsFile: fileName,
     filePath: filePath
-  }
-}
+  };
+};
