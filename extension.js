@@ -8,12 +8,14 @@ const getGamsIdeDataViewContainerContent = require("./src/utils/getGamsIdeDataVi
 const debouncedListenToLstFiles = require("./src/parseLstFiles");
 const provideGAMSCompletionItems = require("./src/provideGAMSCompletionItems");
 const provideGAMSSignatureHelp = require("./src/provideGAMSSignatureHelp");
+const updateStatusBar = require("./src/utils/updateStatusBar");
+const checkIfExcluded = require("./src/utils/checkIfExcluded");
 const State = require("./src/State.js");
 
 let terminal;
 let gamsView;
 let gamsDataView;
-
+let gamsStatusBarItem;
 
 async function activate(context) {
   // first, we try to delete all contents of the scratch directory (scrdir) to avoid
@@ -110,9 +112,100 @@ async function activate(context) {
     }, "(", ",")
   );
 
+  // register status bar item showing the current main file
+  gamsStatusBarItem = vscode.window.createStatusBarItem(vscode.StatusBarAlignment.Right, 100);
+  context.subscriptions.push(gamsStatusBarItem);
+
+  // register some listener that make sure the status bar 
+  // item id always up-to-date
+  context.subscriptions.push(
+    vscode.window.onDidChangeActiveTextEditor(() => updateStatusBar(gamsStatusBarItem))
+  );
+
+  updateStatusBar(gamsStatusBarItem);
+
   // register a command to execute a GAMS file
   context.subscriptions.push(
     vscode.commands.registerCommand("gams.run", () => runGams(terminal))
+  );
+
+  // gams stop -> sigterm
+  context.subscriptions.push(
+    vscode.commands.registerCommand("gams.stop", () => terminal.sendText(String.fromCharCode(3)))
+  );
+
+  // gams kill -> sigkill
+  context.subscriptions.push(
+    vscode.commands.registerCommand("gams.kill", () => terminal.sendText(String.fromCharCode(24)))
+  );
+
+  // add "Set as main GAMS file" command
+  context.subscriptions.push(
+    vscode.commands.registerCommand("gams.setAsMainGmsFile", () => {
+      const file = vscode.window.activeTextEditor?.document.fileName;
+      vscode.workspace.getConfiguration().update("gamsIde.mainGmsFile", file, vscode.ConfigurationTarget.Workspace);
+    })
+  );
+
+  // add "Clear main GAMS file" command
+  context.subscriptions.push(
+    vscode.commands.registerCommand("gams.clearMainGmsFile", () => {
+      vscode.workspace.getConfiguration().update("gamsIde.mainGmsFile", "", vscode.ConfigurationTarget.Workspace);
+    })
+  );
+
+  // add "Add to exclude from main GAMS file" command
+  context.subscriptions.push(
+    vscode.commands.registerCommand("gams.addToExcludeFromMainGmsFile", () => {
+      const file = vscode.window.activeTextEditor?.document.fileName;
+      const excludeFromMainGmsFile = vscode.workspace.getConfiguration().get("gamsIde.excludeFromMainGmsFile");
+      // check if the file is already excluded
+      if (checkIfExcluded(file, excludeFromMainGmsFile)) {
+        vscode.window.showInformationMessage("File is already excluded.");
+        return;
+      } else {
+        excludeFromMainGmsFile.push(file);
+        vscode.workspace.getConfiguration().update("gamsIde.excludeFromMainGmsFile", excludeFromMainGmsFile, vscode.ConfigurationTarget.Workspace);
+      }
+    })
+  );
+
+  // add "Remove from exclude from main GAMS file" command
+  context.subscriptions.push(
+    vscode.commands.registerCommand("gams.removeFromExcludeFromMainGmsFile", () => {
+      const file = vscode.window.activeTextEditor?.document.fileName;
+      const excludeFromMainGmsFile = vscode.workspace.getConfiguration().get("gamsIde.excludeFromMainGmsFile");
+      const matchedExcludePath = checkIfExcluded(file, excludeFromMainGmsFile, true);
+      // check if the file is already excluded
+      if (!matchedExcludePath) {
+        vscode.window.showInformationMessage("File is not excluded.");
+        return;
+      } else {
+        const index = excludeFromMainGmsFile.indexOf(matchedExcludePath);
+        excludeFromMainGmsFile.splice(index, 1);
+        vscode.workspace.getConfiguration().update("gamsIde.excludeFromMainGmsFile", excludeFromMainGmsFile, vscode.ConfigurationTarget.Workspace);
+      }
+    })
+  );
+
+  // add "Select main GAMS file" command
+  context.subscriptions.push(
+    vscode.commands.registerCommand("gams.selectMainGmsFile", async () => {
+      // show a quick pick to select the main GAMS file
+      // only show gams files from the current workspace
+      const gmsFiles = await vscode.workspace.findFiles("**/*.gms");
+      const quickPick = vscode.window.createQuickPick(); 
+      quickPick.items = gmsFiles.map((file) => ({ label: file.fsPath }));
+      quickPick.title = "Select main GAMS file";
+      quickPick.onDidChangeSelection((selection) => {        
+        if (selection[0]) {
+          vscode.workspace.getConfiguration().update("gamsIde.mainGmsFile", selection[0].label, vscode.ConfigurationTarget.Workspace);
+          quickPick.hide();
+        }
+      });
+      quickPick.onDidHide(() => quickPick.dispose());
+      quickPick.show();
+    })
   );
 
   context.subscriptions.push(
@@ -301,7 +394,7 @@ async function activate(context) {
 
         webviewView.webview.onDidReceiveMessage(async message => {
           switch (message.command) {
-            case 'enableSymbolParsing':
+            case 'enableDataParsing':
               vscode.workspace.getConfiguration("gamsIde").update("parseGamsData", true);
               break;
           }
@@ -351,6 +444,13 @@ async function activate(context) {
         if (editor && editor.document.languageId === "gams") {
           updateDiagnostics({ document: editor.document, collection, gamsDataView, state, terminal });
         }
+      }
+    } else if (e.affectsConfiguration("gamsIde.mainGmsFile") || e.affectsConfiguration("gamsIde.excludeFromMainGmsFile")) {
+      updateStatusBar(gamsStatusBarItem);
+      // re-run diagnostics
+      const editor = vscode.window.activeTextEditor;
+      if (editor && editor.document.languageId === "gams") {
+        updateDiagnostics({ document: editor.document, collection, gamsDataView, state, terminal });
       }
     }
   });

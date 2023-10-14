@@ -101,7 +101,7 @@ module.exports = async function updateDiagnostics(args) {
             // show error in VS Code output
             // and add button to open the dmp file
             if (!state.get("ignoreDataValueParsingError")) {
-              vscode.window.showWarningMessage("GAMS Symbols: " + err + ".\nClick 'Hide error' to hide for this session.", "Hide error", "Disable data parsing", "Open DMP .lst").then((value) => {
+              vscode.window.showWarningMessage("GAMS Data Parsing: " + err + ".\nClick 'Hide error' to hide for this session.", "Hide error", "Disable data parsing", "Open DMP .lst").then((value) => {
                 if (value === "Open DMP .lst") {
                   vscode.workspace.openTextDocument(format({ ...parse(compileCommand.dumpPath), base: '', ext: '.lst' })).then((doc) => {
                     vscode.window.showTextDocument(doc);
