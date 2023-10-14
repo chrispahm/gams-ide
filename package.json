@@ -43,6 +43,34 @@
       {
         "command": "gams.openSymbolPanel",
         "title": "GAMS: Open Symbol Panel"
+      },
+      {
+        "command": "gams.stop",
+        "title": "GAMS: Stop"
+      },
+      {
+        "command": "gams.kill",
+        "title": "GAMS: Kill"
+      },
+      {
+        "command": "gams.setAsMainGmsFile",
+        "title": "GAMS: Set as main GAMS file"
+      },
+      {
+        "command": "gams.clearMainGmsFile",
+        "title": "GAMS: Clear main GAMS file"
+      },
+      {
+        "command": "gams.addToExcludeFromMainGmsFile",
+        "title": "GAMS: Add to exclude from main GAMS file list"
+      },
+      {
+        "command": "gams.removeFromExcludeFromMainGmsFile",
+        "title": "GAMS: Remove from exclude from main GAMS file list"
+      },
+      {
+        "command": "gams.selectMainGmsFile",
+        "title": "GAMS: Select main GAMS file"
       }
     ],
     "configuration": {
@@ -151,7 +179,7 @@
       "panel": [
         {
           "id": "gamsIdeSymbolContainer",
-          "title": "GAMS Symbols",
+          "title": "GAMS Data",
           "icon": "media/logo.svg"
         }
       ]

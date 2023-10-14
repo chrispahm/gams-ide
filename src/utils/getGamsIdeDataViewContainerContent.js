@@ -53,7 +53,7 @@ module.exports = function getGamsIdeDataViewContainerContent(options) {
       </vscode-dropdown>
     </div>
     <pre id="gams-symbols-content" style="padding: 40px 0px;">
-      ${ !isDataParsingEnabled ? "Symbol parsing is disabled. <a class='link' onclick='enableSymbolParsing()'>Click here to enable it.</a>" : "No data to show. Click on a symbol to get started!" }
+      ${ !isDataParsingEnabled ? "GAMS Data parsing is disabled. <a class='link' onclick='enableDataParsing()'>Click here to enable it.</a>" : "No data to show. Click on a symbol to get started!" }
     </pre>
   </body>
   <script type="module">
@@ -83,9 +83,9 @@ module.exports = function getGamsIdeDataViewContainerContent(options) {
     const dropdown = document.getElementById('gams-symbols-dropdown');
     const content = document.getElementById('gams-symbols-content');
 
-    window.enableSymbolParsing = function() {
+    window.enableDataParsing = function() {
       vscode.postMessage({
-        command: 'enableSymbolParsing'
+        command: 'enableDataParsing'
       });
     }
     // Handle messages sent from the extension to the webview
@@ -96,7 +96,7 @@ module.exports = function getGamsIdeDataViewContainerContent(options) {
           if (message.data.isDataParsingEnabled) {
             content.innerHTML = "No data to show. Click on a symbol to get started!";
           } else {
-            content.innerHTML = "Symbol parsing is disabled. <a class='link' onclick='enableSymbolParsing()'>Click here to enable it.</a>";
+            content.innerHTML = "Symbol parsing is disabled. <a class='link' onclick='enableDataParsing()'>Click here to enable it.</a>";
           }
           break;
         case 'updateSymbolError':
