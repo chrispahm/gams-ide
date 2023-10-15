@@ -6,10 +6,9 @@ const getSymbolUnderCursor = require("./src/getSymbolUnderCursor");
 const getGamsIdeViewContainerContent = require("./src/utils/getGamsIdeViewContainerContent");
 const getGamsIdeDataViewContainerContent = require("./src/utils/getGamsIdeDataViewContainerContent");
 const debouncedListenToLstFiles = require("./src/parseLstFiles");
-const provideGAMSCompletionItems = require("./src/provideGAMSCompletionItems");
-const provideGAMSSignatureHelp = require("./src/provideGAMSSignatureHelp");
 const updateStatusBar = require("./src/utils/updateStatusBar");
 const checkIfExcluded = require("./src/utils/checkIfExcluded");
+const implementLSPMethods = require("./src/lsp/implementLSPMethods");
 const State = require("./src/State.js");
 
 let terminal;
@@ -85,6 +84,10 @@ async function activate(context) {
     })
   );
 
+  // add LSP features
+  implementLSPMethods(context, state);
+
+  // add commands
   // register a command to get the symbol under the cursor
   context.subscriptions.push(
     vscode.window.onDidChangeTextEditorSelection(async (event) => {
@@ -92,24 +95,6 @@ async function activate(context) {
         getSymbolUnderCursor({ event, gamsDataView, state, gamsView });
       }
     })
-  );
-
-  // provide auto-completeion 
-  context.subscriptions.push(
-    vscode.languages.registerCompletionItemProvider("gams", {
-      provideCompletionItems(document, position) {
-        return provideGAMSCompletionItems(document, position, state);
-      }
-    }, " ", ",", "(", "[", "{", ":", ">", "<", "=", "+", "-", "*", "/", "^", "!", "&", "|", ">", "<", "\t")
-  );
-
-  // provide signature help
-  context.subscriptions.push(
-    vscode.languages.registerSignatureHelpProvider("gams", {
-      provideSignatureHelp(document, position) {
-        return provideGAMSSignatureHelp(document, position, state);
-      }
-    }, "(", ",")
   );
 
   // register status bar item showing the current main file

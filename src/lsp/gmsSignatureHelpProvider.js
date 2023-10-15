@@ -1,5 +1,5 @@
 const vscode = require("vscode");
-const gamsParser = require('./utils/gamsParser.js');
+const gamsParser = require('../utils/gamsParser.js');
 
 module.exports = function provideGAMSSignatureHelp(document, position, state) {
   const referenceTree = state.get("referenceTree");
