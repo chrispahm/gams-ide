@@ -1,4 +1,4 @@
-const gamsParser = require("./utils/gamsParser.js");
+const gamsParser = require("../utils/gamsParser.js");
 const vscode = require("vscode");
 
 function getCompletionStringsSubsets(symbol) {
