@@ -27,7 +27,7 @@ module.exports = async function createGamsCommand(docFileName, extraArgs = []) {
         fs.mkdirSync(scratchDirectory);
       } catch (error) {
         console.log(error);
-        vscode.window.showErrorMessage(error.message);
+        vscode.window.showErrorMessage("Error creating scrdir: ", error.message);
       }
     }
   }
@@ -71,11 +71,15 @@ module.exports = async function createGamsCommand(docFileName, extraArgs = []) {
     
     if (gamsFile === 'exp_starter.gms') {
       commandLineArguments = commandLineArguments.concat(
-        [`--scen=incgen${sep}runInc`, '--ggig=on', '--baseBreed=falsemyBasBreed']
+        [`--scen=incgen${sep}runInc`]
       );
     } else if (gamsFile === 'capmod.gms') {
       commandLineArguments = commandLineArguments.concat(
         [`-scrdir="${scratchDirectory}"`, '--scen=fortran']
+      );
+    } else if (gamsFile === 'capreg.gms') {
+      commandLineArguments = commandLineArguments.concat(
+        [`-scrdir="${scratchDirectory}"`, '--scen=forreg']
       );
     } else if (gamsFile === 'com_.gms') {
       commandLineArguments = commandLineArguments.concat(
@@ -98,7 +102,7 @@ module.exports = async function createGamsCommand(docFileName, extraArgs = []) {
     `o="${randBasePath}.lst"`, 
     `fErr="${randBasePath}.err"`,
     `rf="${randBasePath}.ref"`,
-    `gdx="${randBasePath}.gdx"`,
+    // `gdx="${randBasePath}.gdx"`,
     `-scrdir="${scratchDirectory}"`,
     `--scrdir="${scratchDirectory}"`, 
     `-workdir="${filePath}"`,
