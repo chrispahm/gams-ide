@@ -1,7 +1,6 @@
 const vscode = require('vscode');
 const readline = require('readline');
 const fs = require('fs');
-const _ = require('lodash');
 const shell = require('shelljs');
 const path = require('path');
 
@@ -52,7 +51,8 @@ function parseDMP(file, config, referenceTree) {
     const defaultSettings = vscode.workspace.getConfiguration("gamsIde");
     const consoleDispWidth = defaultSettings.get('consoleDispWidth');
     const dumpFile = fs.createWriteStream(`${config.scratchdir}${path.sep}${path.basename(file, '.dmp')}.gms`, { flags: 'w' });
-    const symbols = _.filter(referenceTree, o => { return o.type === 'SET' || o.type === 'PARAM' && o.name; });
+    
+    const symbols = referenceTree?.filter(o => { return o.type === 'SET' || o.type === 'PARAM' && o.name; });
     const solves = [];
 
     rl.on('line', (line) => {
@@ -100,13 +100,18 @@ function parseDMP(file, config, referenceTree) {
       });
     });
 
-    rl.on('error', reject);
+    rl.on('error', err => {
+      console.log('error in parseDMP', err);
+      reject(err);
+    });
   });
 }
 
 function execDMP(dumpFile, config) {
-  return new Promise((resolve, reject) => {
-    const gamsParams = config.gamsexe + ' "' + dumpFile.path + '" suppress=1 pageWidth=80 pageSize=0 lo=3 resLim=0 -scrdir="' + config.scratchdir + '" ';
+  return new Promise((resolve) => {
+    const listingPath = `${dumpFile.path}.lst`;
+    const gamsParams = `"${config.gamsexe}" "${dumpFile.path}" o="${listingPath}" suppress=1 pageWidth=80 pageSize=0 lo=3 resLim=0 -scrdir="${config.scratchdir}"`;
+    
     shell.cd(config.scratchdir);
     
     shell.exec(gamsParams, {silent: true}, (code, stdout, stderr) => {
@@ -117,7 +122,7 @@ function execDMP(dumpFile, config) {
       fs.unlink(dumpFile.path, (err) => {
         if (err) throw err;
       });      
-      resolve(`${config.scratchdir}${path.sep}${path.basename(dumpFile.path, '.gms')}.lst`);
+      resolve(listingPath);
     });
 
   });
@@ -134,13 +139,13 @@ function getData(lst, solves, gamsSolves, referenceTree) {
 
     function save(solve, symbol, data) {
       // save solve
-      const curSolve = _.find(solves, { 'line': Number(solve) });
+      const curSolve = solves.find(s => s.line === Number(solve));
       if (curSolve) {
         const statement = {
           model: curSolve.model,
           line: Number(solve)
         };
-        if (!_.find(gamsSolves, { 'line': Number(solve) })) {
+        if (!gamsSolves.find(s => s.line === Number(solve))) {
           gamsSolves.push(statement);
         }
       }
@@ -178,7 +183,7 @@ function getData(lst, solves, gamsSolves, referenceTree) {
           const pieces = line.split(/[\s]+/);
           pieces.splice(0, 2);
           const data = pieces.join(' ');
-          const solve = _.find(solves, { 'display': dispLine });
+          const solve = solves.find(s => s.display === dispLine);
           if (!solve) return;
           curSym = symbol;
           curSolve = solve.line;
@@ -227,6 +232,9 @@ function getData(lst, solves, gamsSolves, referenceTree) {
       resolve();
     });
 
-    rl.on('error', reject);
+    rl.on('error', err => {
+      console.log('error in getData', err);
+      reject(err);
+    });
   });
 }
