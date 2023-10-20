@@ -66,15 +66,17 @@ module.exports = async function updateDiagnostics(args) {
       const errorFileContents = await readFile(compileCommand.errorPath, "utf8");
 
       // if include parsing is enabled, parse the include file summary
-      if (vscode.workspace.getConfiguration("gamsIde").get("enableModelIncludeTreeView")) {
-        parseIncludeFileSummary(compileCommand.listingPath).then((includeFileSummary) => {
-          state.update("parsedIncludes", includeFileSummary);
-          // call the refresh command on the include tree view
+      parseIncludeFileSummary(compileCommand.listingPath, state).then(({ includeFileSummary, compileTimeVariables }) => {        
+        state.update("parsedIncludes", includeFileSummary);
+        state.update("compileTimeVariables", compileTimeVariables);
+        // call the refresh command on the include tree view
+        if (includeFileSummary.length > 0) {
           vscode.commands.executeCommand("gams.refreshIncludeTree");
-        }).catch(err => {
-          console.error("error", err);
-        });
-      }
+        }
+      }).catch(err => {
+        console.error("error", err);
+      });
+
       // if there are no errors, reset the collection to no errors
       if (errorFileContents.split(/\n/).length <= 2) {
         collection.clear();
@@ -129,6 +131,7 @@ module.exports = async function updateDiagnostics(args) {
               });
             }
             console.error("error", err);
+            vscode.commands.executeCommand("gams.getSymbolUnderCursor");
           });
         }
         // return early
