@@ -196,16 +196,16 @@
         "command": "gams.modelTree.hideFile",
         "title": "Hide file from tree view",
         "icon": {
-          "dark": "resources/dark/hide.svg",
-          "light": "resources/light/hide.svg"
+          "dark": "media/dark/hide.svg",
+          "light": "media/light/hide.svg"
         }
       },
       {
         "command": "gams.modelTree.resetHiddenFiles",
         "title": "Reset hidden files",
         "icon": {
-          "dark": "resources/dark/reset.svg",
-          "light": "resources/light/reset.svg"
+          "dark": "media/dark/reset.svg",
+          "light": "media/light/reset.svg"
         }
       }
     ],
