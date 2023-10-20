@@ -19,7 +19,7 @@ module.exports = async function clearScrdir() {
         await fs.mkdir(scratchDirectory);
       } catch (error) {
         console.error("error in clearScrdir: ", error);
-        vscode.window.showErrorMessage(error.message);
+        vscode.window.showErrorMessage("Error in clearScrdir: ", error.message);
       }
     }
   }

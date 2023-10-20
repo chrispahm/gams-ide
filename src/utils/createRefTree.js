@@ -1,7 +1,6 @@
 const readline = require('readline');
 const fs = require('fs');
 const path = require('path');
-const _ = require('lodash');
 
 module.exports = function createRefTree(refFile) {
   return new Promise((resolve, reject) => {
@@ -123,7 +122,7 @@ module.exports = function createRefTree(refFile) {
       fs.unlink(refFile, (err) => {
         if (err) throw err;
       });
-      resolve(_.values(json));
+      resolve(Object.values(json));
     });
 
     rl.on('error', reject);
