@@ -14,6 +14,9 @@ const config = {
   externals: {
     vscode: 'commonjs vscode'
   },
+  optimization: {
+    minimize: true
+  },
   resolve: {
     // support reading TypeScript and JavaScript files, 📖 -> https://github.com/TypeStrong/ts-loader
     mainFields: ['browser', 'module', 'main'], // look for `browser` entry point in imported node modules

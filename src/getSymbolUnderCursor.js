@@ -28,12 +28,18 @@ module.exports = async function getSymbolUnderCursor(args) {
   // Check if there is a word range
   if (wordRange) {
     // Get the text of the word
-    let word = document.getText(wordRange);
-
+    let word = document.getText(wordRange);    
+    const characterBeforeWord = wordRange.start.character ? document.getText(
+      new vscode.Range(
+        new vscode.Position(wordRange.start.line, wordRange.start.character - 1),
+        new vscode.Position(wordRange.start.line, wordRange.start.character)
+      )
+    ) : "";
+    
     // find the word in the reference tree
     const referenceTree = state.get("referenceTree");
+    const compileTimeVariables = state.get("compileTimeVariables");
     const solves = state.get("solves");
-
     // const position = editor.selection.active;
     const line = position.line;
     const column = position.character;
@@ -45,9 +51,22 @@ module.exports = async function getSymbolUnderCursor(args) {
     let domainIndex = 0;
 
     // first, we try to find the reference in the reference tree without checking the AST
-    let matchingRef = referenceTree?.find(
-      (item) => item.name?.toLowerCase() === word?.toLowerCase()
-    );
+    let matchingRef;
+    if (characterBeforeWord === "%") {
+      matchingRef = compileTimeVariables?.find(
+        (item) => item.name?.toLowerCase() === word?.toLowerCase()
+      );
+    } else {
+      matchingRef = referenceTree?.find(
+        (item) => item.name?.toLowerCase() === word?.toLowerCase()
+      );
+      if (!matchingRef) {
+        matchingRef = compileTimeVariables?.find(
+          (item) => item.name?.toLowerCase() === word?.toLowerCase()
+        );
+      }
+    }
+
     const { text: lineText } = document.lineAt(line);
     let ast = [];
     try {
@@ -55,14 +74,14 @@ module.exports = async function getSymbolUnderCursor(args) {
     } catch (error) {
       console.error("Error parsing line: ", error);
     }
-    if (ast) {      
-      // parse the line using the PEG parser
+    if (ast) {
+      // parse the line using the PEG parser      
       const gamsSymbol = ast.find((entry) =>
-      (entry.name?.toLowerCase().includes(word?.toLowerCase())
+      (entry && entry.name?.toString().toLowerCase().includes(word?.toLowerCase())
         && entry.start <= column
         && entry.end >= column
       ));
-      
+
       if (gamsSymbol) {
         const functionRef = referenceTree?.find((item) => item.nameLo === gamsSymbol?.functionName?.toLowerCase());
         if (gamsSymbol.isQuoted) {
@@ -96,7 +115,7 @@ module.exports = async function getSymbolUnderCursor(args) {
       };
 
       state.update("curSymbol", data);
-      
+
       // send data to webview
       gamsView.webview.postMessage({
         command: "updateReference",

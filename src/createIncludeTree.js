@@ -41,7 +41,7 @@ class gamsIncludeExplorer {
         // reveal the current file in the include tree
         // find the element in the treeview
         const includeTree = includeTreeProvider.treeView;
-        const elem = includeTreeProvider.findRecursive(includeTree, editor.document.fileName);        
+        const elem = includeTreeProvider.findRecursive(includeTree, editor.document.fileName);
         await view.reveal(elem, { focus: true, expand: true });
       }
     }));
@@ -57,7 +57,7 @@ function createGAMSIncludeTreeProvider(state) {
       this.shouldRefresh = false;
     }
 
-    findRecursive(treeView, filePath) {      
+    findRecursive(treeView, filePath) {
       if (treeView.resourceUri.fsPath == filePath) {
         return treeView;
       } else {
@@ -117,22 +117,28 @@ function createGAMSIncludeTreeProvider(state) {
   return new GAMSIncludeTreeProvider();
 }
 
-function parseIncludeFileSummary(lstFile) {
+function parseIncludeFileSummary(lstFile, state) {
+  const shouldParseInclude = vscode.workspace.getConfiguration("gamsIde").get("enableModelIncludeTreeView");
+
   return new Promise((resolve, reject) => {
     const rl = readline.createInterface({
       input: fs.createReadStream(lstFile),
       crlfDelay: Infinity
     });
 
-    const files = [];
+    const includeFileSummary = [];
+    const compileTimeVariables = [];
     let inIncludeFileSummary = false;
+    let inCompileTimeVariableList = false;
 
     rl.on('line', (line) => {
       // skip empty lines
       if (line.length === 0 || line === "\r" || line === "\n") {
         return;
-      } else if (line.startsWith("Include File Summary")) {
+      } else if (line.startsWith("Include File Summary") && shouldParseInclude) {
         inIncludeFileSummary = true;
+      } else if (line.startsWith("---- Begin of Compile-time Variable List")) {
+        inCompileTimeVariableList = true;
       } else if (inIncludeFileSummary && line.match(/^\s/)) {
         let tokens = line.split(/\s+/);
         // If the line has six tokens, then it is a valid entry
@@ -148,18 +154,43 @@ function parseIncludeFileSummary(lstFile) {
             filename: fixFileName(tokens[6]) // Keep the filename as a string
           };
           // Push the object to the array
-          files.push(file);
+          includeFileSummary.push(file);
         }
+      } else if (inCompileTimeVariableList && line.split(/\s+/).length >= 5) {        
+        let tokens = line.split(/\s+/);
+        // If the line has six tokens, then it is a valid entry
+        // Create an object with properties corresponding to each column
+        let file = {
+          level: parseInt(tokens[1]),
+          name: tokens[2],
+          type: tokens[3],
+          description: tokens.slice(4).join(" "),
+          get data() {
+            const solves = state.get("solves");
+            if (!solves) {
+              return null;
+            }
+            const data = {};
+            solves.forEach((solve) => {
+              data[`line_${Number(solve.line)}`] = `---- ${tokens[3]} ${tokens[2]}\n${tokens.slice(4).join(" ")}`;
+            });
+            return data;
+          }
+        };
+        // Push the object to the array
+        compileTimeVariables.push(file);
       } else if (inIncludeFileSummary) {
         inIncludeFileSummary = false;
+      } else if (inIncludeFileSummary) {
+        inCompileTimeVariableList = false;
       }
     });
 
     rl.on('close', () => {
-      if (files.length === 0) {
+      if (includeFileSummary.length === 0 && shouldParseInclude) {
         reject(new Error('No include file summary found. Remove $offInclude to activate.'));
-      } else {        
-        resolve(files);
+      } else {
+        resolve({ includeFileSummary, compileTimeVariables });
       }
     });
 

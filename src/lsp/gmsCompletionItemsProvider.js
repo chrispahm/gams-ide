@@ -54,6 +54,25 @@ function symbolToCompletionItemKind(symbol) {
   }
 }
 
+function createCompletionsForCompileTimeVariables(symbols, options = {}) {
+  const {
+    prefix = ""
+  } = options;
+  
+  return symbols
+    .filter(symbol => symbol.name?.toLowerCase()?.startsWith(prefix?.toLowerCase()))
+    .map(symbol => {
+      const completionItem = new vscode.CompletionItem(symbol.name);
+      completionItem.kind = vscode.CompletionItemKind.Constant;
+      if (symbol.description) {
+        completionItem.documentation = `(${symbol.type}) ${symbol.description}`;
+      }
+      completionItem.command = { command: 'editor.action.triggerSuggest', title: 'Re-trigger completions...' };
+      completionItem.insertText = `%${symbol.name}%`;
+      return completionItem;
+    });
+}
+
 
 function createCompletionsForSymbols(symbols, options = {}) {
   const {
@@ -146,6 +165,8 @@ module.exports = function provideGAMSCompletionItems(document, position, state) 
   let ast = [];
   let completions = [];
   const referenceTree = state.get("referenceTree");
+  const compileTimeVariables = state.get("compileTimeVariables");
+
   try {
     ast = gamsParser.parse(document.lineAt(position.line).text);
   } catch (error) {
@@ -172,10 +193,10 @@ module.exports = function provideGAMSCompletionItems(document, position, state) 
           // there may be cross-sets that contain the same domain (or parts of it)
           // that we also need to consider
           crosssets = referenceTree.filter(entry =>
-            (entry.type === "SET" && entry.domain.length > 1 
-              && entry.name !== functionRef.name 
-              && entry.domain.every((el, i) => functionRef.domain[i + gamsSymbol.index]?.name === el.name)
-            )
+          (entry.type === "SET" && entry.domain.length > 1
+            && entry.name !== functionRef.name
+            && entry.domain.every((el, i) => functionRef.domain[i + gamsSymbol.index]?.name === el.name)
+          )
           );
         }
         const possSmybols = [
@@ -196,6 +217,15 @@ module.exports = function provideGAMSCompletionItems(document, position, state) 
     }
   }
   // all other cases
-  completions = createCompletionsForSymbols(referenceTree, document.getText(document.getWordRangeAtPosition(position)));
+  const prefix = document.getText(document.getWordRangeAtPosition(position));
+  completions = createCompletionsForSymbols(referenceTree, {
+    prefix
+  });
+  // merge with compile time variables
+  completions = completions.concat(
+    createCompletionsForCompileTimeVariables(compileTimeVariables, {
+      prefix
+    })
+  );
   return completions;
 };
