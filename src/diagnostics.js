@@ -7,6 +7,7 @@ const createRefTree = require("./utils/createRefTree.js");
 const createGamsCompileCommand = require("./utils/createGamsCompileCommand.js");
 // const gdx = require('node-gdx')();
 const createRefTreeWithSymbolValues = require("./createRefTreeWithSymbolValues.js");
+const { parseIncludeFileSummary } = require("./createIncludeTree.js");
 
 function execAsync(command) {
   return new Promise((resolve) => {
@@ -63,6 +64,17 @@ module.exports = async function updateDiagnostics(args) {
 
       // parse the contents of the error file
       const errorFileContents = await readFile(compileCommand.errorPath, "utf8");
+
+      // if include parsing is enabled, parse the include file summary
+      if (vscode.workspace.getConfiguration("gamsIde").get("enableModelIncludeTreeView")) {
+        parseIncludeFileSummary(compileCommand.listingPath).then((includeFileSummary) => {
+          state.update("parsedIncludes", includeFileSummary);
+          // call the refresh command on the include tree view
+          vscode.commands.executeCommand("gams.refreshIncludeTree");
+        }).catch(err => {
+          console.error("error", err);
+        });
+      }
       // if there are no errors, reset the collection to no errors
       if (errorFileContents.split(/\n/).length <= 2) {
         collection.clear();
@@ -97,13 +109,16 @@ module.exports = async function updateDiagnostics(args) {
             scratchdir: compileCommand.scratchDirectory,
             gamsexe: compileCommand.gamsExe,
             state
+          }).then(() => {
+            // call the refresh command on the include tree view
+            vscode.commands.executeCommand("gams.getSymbolUnderCursor");
           }).catch(err => {
             // show error in VS Code output
             // and add button to open the dmp file
             if (!state.get("ignoreDataValueParsingError")) {
               vscode.window.showWarningMessage("GAMS Data Parsing: " + err + ".\nClick 'Hide error' to hide for this session.", "Hide error", "Disable data parsing", "Open DMP .lst").then((value) => {
                 if (value === "Open DMP .lst") {
-                  vscode.workspace.openTextDocument(format({ ...parse(compileCommand.dumpPath), base: '', ext: '.lst' })).then((doc) => {
+                  vscode.workspace.openTextDocument(format({ ...parse(compileCommand.dumpPath), base: '', ext: '.gms.lst' })).then((doc) => {
                     vscode.window.showTextDocument(doc);
                   });
                 } else if (value === "Disable data parsing") {

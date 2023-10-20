@@ -2,7 +2,7 @@
   "name": "gams-ide",
   "displayName": "gams-ide",
   "description": "A GAMS integrated development environment for VSCode",
-  "version": "0.0.7",
+  "version": "0.0.8",
   "repository": {
     "type": "git",
     "url": "https://github.com/chrispahm/gams-ide"
@@ -71,6 +71,142 @@
       {
         "command": "gams.selectMainGmsFile",
         "title": "GAMS: Select main GAMS file"
+      },
+      {
+        "command": "gams.modelTree.showEXIT",
+        "title": "  EXIT"
+      },
+      {
+        "command": "gams.modelTree.hideEXIT",
+        "title": "✓  EXIT"
+      },
+      {
+        "command": "gams.modelTree.showINCLUDE",
+        "title": "  INCLUDE"
+      },
+      {
+        "command": "gams.modelTree.hideINCLUDE",
+        "title": "✓  INCLUDE"
+      },
+      {
+        "command": "gams.modelTree.showBATINCLUDE",
+        "title": "  BATINCLUDE"
+      },
+      {
+        "command": "gams.modelTree.hideBATINCLUDE",
+        "title": "✓  BATINCLUDE"
+      },
+      {
+        "command": "gams.modelTree.showLIBINCLUDE",
+        "title": "  LIBINCLUDE"
+      },
+      {
+        "command": "gams.modelTree.hideLIBINCLUDE",
+        "title": "✓  LIBINCLUDE"
+      },
+      {
+        "command": "gams.modelTree.showSYSINCLUDE",
+        "title": "  SYSINCLUDE"
+      },
+      {
+        "command": "gams.modelTree.hideSYSINCLUDE",
+        "title": "✓  SYSINCLUDE"
+      },
+      {
+        "command": "gams.modelTree.showCALL",
+        "title": "  CALL"
+      },
+      {
+        "command": "gams.modelTree.hideCALL",
+        "title": "✓  CALL"
+      },
+      {
+        "command": "gams.modelTree.showCALL.ASYNC",
+        "title": "  CALL.ASYNC"
+      },
+      {
+        "command": "gams.modelTree.hideCALL.ASYNC",
+        "title": "✓  CALL.ASYNC"
+      },
+      {
+        "command": "gams.modelTree.showCALL.TOOL",
+        "title": "  CALL.TOOL"
+      },
+      {
+        "command": "gams.modelTree.hideCALL.TOOL",
+        "title": "✓  CALL.TOOL"
+      },
+      {
+        "command": "gams.modelTree.showGDXIN",
+        "title": "  GDXIN"
+      },
+      {
+        "command": "gams.modelTree.hideGDXIN",
+        "title": "✓  GDXIN"
+      },
+      {
+        "command": "gams.modelTree.showGDXOUT",
+        "title": "  GDXOUT"
+      },
+      {
+        "command": "gams.modelTree.hideGDXOUT",
+        "title": "✓  GDXOUT"
+      },
+      {
+        "command": "gams.modelTree.showIF_EXIST",
+        "title": "  IF_EXIST"
+      },
+      {
+        "command": "gams.modelTree.hideIF_EXIST",
+        "title": "✓  IF_EXIST"
+      },
+      {
+        "command": "gams.modelTree.showIF_DEXIST",
+        "title": "  IF_DEXIST"
+      },
+      {
+        "command": "gams.modelTree.hideIF_DEXIST",
+        "title": "✓  IF_DEXIST"
+      },
+      {
+        "command": "gams.modelTree.showFUNCLIBIN",
+        "title": "  FUNCLIBIN"
+      },
+      {
+        "command": "gams.modelTree.hideFUNCLIBIN",
+        "title": "✓  FUNCLIBIN"
+      },
+      {
+        "command": "gams.modelTree.showTERMINATE",
+        "title": "  TERMINATE"
+      },
+      {
+        "command": "gams.modelTree.hideTERMINATE",
+        "title": "✓  TERMINATE"
+      },
+      {
+        "command": "gams.modelTree.showSTOP",
+        "title": "  STOP"
+      },
+      {
+        "command": "gams.modelTree.hideSTOP",
+        "title": "✓  STOP"
+      },
+      {
+        "command": "gams.modelTree.hideFile",
+        "title": "Hide file from tree view",
+        "icon": {
+          "dark": "media/dark/hide.svg",
+          "light": "media/light/hide.svg"
+        }
+      },
+      {
+        "command": "gams.modelTree.resetHiddenFiles",
+        "title": "Reset hidden files",
+        "icon": {
+          "dark": "media/dark/reset.svg",
+          "light": "media/light/reset.svg"
+        }
       }
     ],
     "configuration": {
@@ -85,6 +221,11 @@
           "description": "The (scratch) directory where gams-ide will read/write temp files. Ideally located on a fast internal disk.",
           "type": "string",
           "default": ""
+        },
+        "gamsIde.enableModelIncludeTreeView": {
+          "description": "Enable a tree view of all includes/batincludes of the model in the sidebar. Make sure that the 'Include File Summary' is printed to the listing file, and $offInclude isn't present in the model source.",
+          "type": "boolean",
+          "default": true
         },
         "gamsIde.maxErrorsToDisplay": {
           "description": "Maximum amount of errors that will be highlighted by gams-ide. Put a 0 if no maximum should be defined. Keep in mind that often only the first error is an actual GAMS error, while the subsequent errors may result from the first error.",
@@ -184,7 +325,179 @@
         }
       ]
     },
+    "menus": {
+      "view/title": [
+        {
+          "command": "gams.modelTree.resetHiddenFiles",
+          "when": "view == gamsIdeModelTree",
+          "group": "navigation"
+        },
+        {
+          "command": "gams.modelTree.hideEXIT",
+          "when": "view == gamsIdeModelTree && !gamsIde:modelTreeIsHiddenEXIT",
+          "group": "includeTypes"
+        },
+        {
+          "command": "gams.modelTree.showEXIT",
+          "when": "view == gamsIdeModelTree && gamsIde:modelTreeIsHiddenEXIT",
+          "group": "includeTypes"
+        },
+        {
+          "command": "gams.modelTree.hideINCLUDE",
+          "when": "view == gamsIdeModelTree && !gamsIde:modelTreeIsHiddenINCLUDE",
+          "group": "includeTypes"
+        },
+        {
+          "command": "gams.modelTree.showINCLUDE",
+          "when": "view == gamsIdeModelTree && gamsIde:modelTreeIsHiddenINCLUDE",
+          "group": "includeTypes"
+        },
+        {
+          "command": "gams.modelTree.hideBATINCLUDE",
+          "when": "view == gamsIdeModelTree && !gamsIde:modelTreeIsHiddenBATINCLUDE",
+          "group": "includeTypes"
+        },
+        {
+          "command": "gams.modelTree.showBATINCLUDE",
+          "when": "view == gamsIdeModelTree && gamsIde:modelTreeIsHiddenBATINCLUDE",
+          "group": "includeTypes"
+        },
+        {
+          "command": "gams.modelTree.hideLIBINCLUDE",
+          "when": "view == gamsIdeModelTree && !gamsIde:modelTreeIsHiddenLIBINCLUDE",
+          "group": "includeTypes"
+        },
+        {
+          "command": "gams.modelTree.showLIBINCLUDE",
+          "when": "view == gamsIdeModelTree && gamsIde:modelTreeIsHiddenLIBINCLUDE",
+          "group": "includeTypes"
+        },
+        {
+          "command": "gams.modelTree.hideSYSINCLUDE",
+          "when": "view == gamsIdeModelTree && !gamsIde:modelTreeIsHiddenSYSINCLUDE",
+          "group": "includeTypes"
+        },
+        {
+          "command": "gams.modelTree.showSYSINCLUDE",
+          "when": "view == gamsIdeModelTree && gamsIde:modelTreeIsHiddenSYSINCLUDE",
+          "group": "includeTypes"
+        },
+        {
+          "command": "gams.modelTree.hideCALL",
+          "when": "view == gamsIdeModelTree && !gamsIde:modelTreeIsHiddenCALL",
+          "group": "includeTypes"
+        },
+        {
+          "command": "gams.modelTree.showCALL",
+          "when": "view == gamsIdeModelTree && gamsIde:modelTreeIsHiddenCALL",
+          "group": "includeTypes"
+        },
+        {
+          "command": "gams.modelTree.hideCALL.ASYNC",
+          "when": "view == gamsIdeModelTree && !gamsIde:modelTreeIsHiddenCALL.ASYNC",
+          "group": "includeTypes"
+        },
+        {
+          "command": "gams.modelTree.showCALL.ASYNC",
+          "when": "view == gamsIdeModelTree && gamsIde:modelTreeIsHiddenCALL.ASYNC",
+          "group": "includeTypes"
+        },
+        {
+          "command": "gams.modelTree.hideCALL.TOOL",
+          "when": "view == gamsIdeModelTree && !gamsIde:modelTreeIsHiddenCALL.TOOL",
+          "group": "includeTypes"
+        },
+        {
+          "command": "gams.modelTree.showCALL.TOOL",
+          "when": "view == gamsIdeModelTree && gamsIde:modelTreeIsHiddenCALL.TOOL",
+          "group": "includeTypes"
+        },
+        {
+          "command": "gams.modelTree.hideGDXIN",
+          "when": "view == gamsIdeModelTree && !gamsIde:modelTreeIsHiddenGDXIN",
+          "group": "includeTypes"
+        },
+        {
+          "command": "gams.modelTree.showGDXIN",
+          "when": "view == gamsIdeModelTree && gamsIde:modelTreeIsHiddenGDXIN",
+          "group": "includeTypes"
+        },
+        {
+          "command": "gams.modelTree.hideGDXOUT",
+          "when": "view == gamsIdeModelTree && !gamsIde:modelTreeIsHiddenGDXOUT",
+          "group": "includeTypes"
+        },
+        {
+          "command": "gams.modelTree.showGDXOUT",
+          "when": "view == gamsIdeModelTree && gamsIde:modelTreeIsHiddenGDXOUT",
+          "group": "includeTypes"
+        },
+        {
+          "command": "gams.modelTree.hideIF_EXIST",
+          "when": "view == gamsIdeModelTree && !gamsIde:modelTreeIsHiddenIF_EXIST",
+          "group": "includeTypes"
+        },
+        {
+          "command": "gams.modelTree.showIF_EXIST",
+          "when": "view == gamsIdeModelTree && gamsIde:modelTreeIsHiddenIF_EXIST",
+          "group": "includeTypes"
+        },
+        {
+          "command": "gams.modelTree.hideIF_DEXIST",
+          "when": "view == gamsIdeModelTree && !gamsIde:modelTreeIsHiddenIF_DEXIST",
+          "group": "includeTypes"
+        },
+        {
+          "command": "gams.modelTree.showIF_DEXIST",
+          "when": "view == gamsIdeModelTree && gamsIde:modelTreeIsHiddenIF_DEXIST",
+          "group": "includeTypes"
+        },
+        {
+          "command": "gams.modelTree.hideFUNCLIBIN",
+          "when": "view == gamsIdeModelTree && !gamsIde:modelTreeIsHiddenFUNCLIBIN",
+          "group": "includeTypes"
+        },
+        {
+          "command": "gams.modelTree.showFUNCLIBIN",
+          "when": "view == gamsIdeModelTree && gamsIde:modelTreeIsHiddenFUNCLIBIN",
+          "group": "includeTypes"
+        },
+        {
+          "command": "gams.modelTree.hideTERMINATE",
+          "when": "view == gamsIdeModelTree && !gamsIde:modelTreeIsHiddenTERMINATE",
+          "group": "includeTypes"
+        },
+        {
+          "command": "gams.modelTree.showTERMINATE",
+          "when": "view == gamsIdeModelTree && gamsIde:modelTreeIsHiddenTERMINATE",
+          "group": "includeTypes"
+        },
+        {
+          "command": "gams.modelTree.hideSTOP",
+          "when": "view == gamsIdeModelTree && !gamsIde:modelTreeIsHiddenSTOP",
+          "group": "includeTypes"
+        },
+        {
+          "command": "gams.modelTree.showSTOP",
+          "when": "view == gamsIdeModelTree && gamsIde:modelTreeIsHiddenSTOP",
+          "group": "includeTypes"
+        }
+      ],
+      "view/item/context": [
+        {
+          "command": "gams.modelTree.hideFile",
+          "when": "view == gamsIdeModelTree",
+          "group": "inline"
+        }
+      ]
+    },
     "views": {
+      "explorer": [
+        {
+          "id": "gamsIdeModelTree",
+          "name": "GAMS Model Tree"
+        }
+      ],
       "gamsIdeViewContainer": [
         {
           "type": "webview",
