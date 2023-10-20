@@ -27,7 +27,7 @@ module.exports = async function createGamsCommand(docFileName, extraArgs = [], i
         fs.mkdirSync(scratchDirectory);
       } catch (error) {
         console.log(error);
-        vscode.window.showErrorMessage(error.message);
+        vscode.window.showErrorMessage("Error creating scrdir: ", error.message);
       }
     }
   }
@@ -76,6 +76,10 @@ module.exports = async function createGamsCommand(docFileName, extraArgs = [], i
     } else if (gamsFile === 'capmod.gms') {
       commandLineArguments = commandLineArguments.concat(
         [`-scrdir="${scratchDirectory}"`, '--scen=fortran']
+      );
+    } else if (gamsFile === 'capreg.gms') {
+      commandLineArguments = commandLineArguments.concat(
+        [`-scrdir="${scratchDirectory}"`, '--scen=forreg', '--ggig=on']
       );
     } else if (gamsFile === 'com_.gms') {
       commandLineArguments = commandLineArguments.concat(

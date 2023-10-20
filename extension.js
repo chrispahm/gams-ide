@@ -9,12 +9,15 @@ const debouncedListenToLstFiles = require("./src/parseLstFiles");
 const updateStatusBar = require("./src/utils/updateStatusBar");
 const checkIfExcluded = require("./src/utils/checkIfExcluded");
 const implementLSPMethods = require("./src/lsp/implementLSPMethods");
+const { gamsIncludeExplorer } = require("./src/createIncludeTree");
+const registerIncludeTreeCommands = require("./src/registerIncludeTreeCommands");
 const State = require("./src/State.js");
 
 let terminal;
 let gamsView;
 let gamsDataView;
 let gamsStatusBarItem;
+let includeTreeProvider;
 
 async function activate(context) {
   // first, we try to delete all contents of the scratch directory (scrdir) to avoid
@@ -84,6 +87,13 @@ async function activate(context) {
     })
   );
 
+  // add the model include tree view if enabled
+  if (vscode.workspace.getConfiguration("gamsIde").get("enableModelIncludeTreeView")) {
+    includeTreeProvider = new gamsIncludeExplorer(context, state);
+  }
+  // add commands necessary for include tree view anyways
+  registerIncludeTreeCommands(context, state);
+  
   // add LSP features
   implementLSPMethods(context, state);
 
@@ -94,8 +104,18 @@ async function activate(context) {
       if (event && event.textEditor.document.languageId === "gams" && event.kind) {
         getSymbolUnderCursor({ event, gamsDataView, state, gamsView });
       }
+    }),
+    vscode.commands.registerCommand("gams.getSymbolUnderCursor", () => {
+      const editor = vscode.window.activeTextEditor;
+      if (editor && editor.document.languageId === "gams") {
+        getSymbolUnderCursor({ event: {
+          textEditor: editor,
+          selections: editor.selections,
+        }, gamsDataView, state, gamsView });
+      }
     })
   );
+  
 
   // register status bar item showing the current main file
   gamsStatusBarItem = vscode.window.createStatusBarItem(vscode.StatusBarAlignment.Right, 100);
@@ -436,6 +456,12 @@ async function activate(context) {
       const editor = vscode.window.activeTextEditor;
       if (editor && editor.document.languageId === "gams") {
         updateDiagnostics({ document: editor.document, collection, gamsDataView, state, terminal });
+      }
+    } else if (e.affectsConfiguration("gamsIde.enableModelIncludeTreeView")) {
+      if (vscode.workspace.getConfiguration("gamsIde").get("enableModelIncludeTreeView")) {
+        includeTreeProvider = new gamsIncludeExplorer(context, state);
+      } else {
+        includeTreeProvider.dispose();
       }
     }
   });
