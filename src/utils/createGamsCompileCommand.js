@@ -97,8 +97,10 @@ module.exports = async function createGamsCommand(docFileName, extraArgs = []) {
   const randStr = Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
   let randBasePath = `${scratchDirectory}${sep}${randStr}`;
 
+  const compileGamsFilePath = `${__dirname}${sep}compile.gms`;
+
   let gamsArgs = [
-    `"${gamsFileToExecute}"`, 'LO=3', "a=c", 
+    `"${compileGamsFilePath}"`, `--gamsFileToRun="${gamsFileToExecute}"`, 'LO=3', "a=c", 
     `o="${randBasePath}.lst"`, 
     `fErr="${randBasePath}.err"`,
     `rf="${randBasePath}.ref"`,

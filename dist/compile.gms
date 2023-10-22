@@ -1,0 +1,3 @@
+$include %gamsFileToRun%
+$onInclude
+$showVariables
