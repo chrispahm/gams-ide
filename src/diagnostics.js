@@ -1,7 +1,7 @@
 const vscode = require("vscode");
 const { format, parse } = require("node:path");
 const { exec } = require('node:child_process');
-const { readFile, access } = require("fs/promises");
+const { readFile, access, unlink } = require("fs/promises");
 const parseError = require("./utils/parseError.js");
 const createRefTree = require("./utils/createRefTree.js");
 const createGamsCompileCommand = require("./utils/createGamsCompileCommand.js");
@@ -64,7 +64,8 @@ module.exports = async function updateDiagnostics(args) {
 
       // parse the contents of the error file
       const errorFileContents = await readFile(compileCommand.errorPath, "utf8");
-
+      // delete the error file, but do not wait for it
+      unlink(compileCommand.errorPath);
       // if include parsing is enabled, parse the include file summary
       parseIncludeFileSummary(compileCommand.listingPath, state).then(({ includeFileSummary, compileTimeVariables }) => {        
         state.update("parsedIncludes", includeFileSummary);
@@ -73,6 +74,8 @@ module.exports = async function updateDiagnostics(args) {
         if (includeFileSummary.length > 0) {
           vscode.commands.executeCommand("gams.refreshIncludeTree");
         }
+        // delete the lst file, but do not wait for it
+        unlink(compileCommand.listingPath);
       }).catch(err => {
         console.error("error", err);
       });
@@ -114,6 +117,8 @@ module.exports = async function updateDiagnostics(args) {
           }).then(() => {
             // call the refresh command on the include tree view
             vscode.commands.executeCommand("gams.getSymbolUnderCursor");
+            // delete the dmp lst file, but do not wait for it
+            unlink(compileCommand.dumpPath + ".lst");
           }).catch(err => {
             // show error in VS Code output
             // and add button to open the dmp file
@@ -129,8 +134,11 @@ module.exports = async function updateDiagnostics(args) {
                   state.update("ignoreDataValueParsingError", true);
                 }
               });
+              console.error("error", err);
+            } else {
+              // delete the dmp lst file, but do not wait for it
+              unlink(compileCommand.dumpPath + ".lst");
             }
-            console.error("error", err);
             vscode.commands.executeCommand("gams.getSymbolUnderCursor");
           });
         }
