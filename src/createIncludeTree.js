@@ -143,6 +143,14 @@ function parseIncludeFileSummary(lstFile, state) {
         let tokens = line.split(/\s+/);
         // If the line has six tokens, then it is a valid entry
         if (tokens.length === 7) {
+          // since we use the compile.gms file as the root, we need to remove it from the include file summary
+          if (parseInt(tokens[1]) === 1 && tokens[3] === "INPUT") {
+            // skip this entry, as it's the compile.gms file
+            return;
+          } else if (parseInt(tokens[1]) === 2) {
+            // this is the actual main file
+            tokens[3] = "INPUT";
+          }
           // Create an object with properties corresponding to each column
           let file = {
             seq: parseInt(tokens[1]), // Parse the sequence number as an integer
