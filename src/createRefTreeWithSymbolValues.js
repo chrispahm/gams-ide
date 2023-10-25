@@ -7,6 +7,7 @@ const path = require('path');
 module.exports = async function createRefTreeWithSymbolValues(options) {
   const {
     file,
+    filePath,
     scratchdir,
     gamsexe,
     state
@@ -26,7 +27,7 @@ module.exports = async function createRefTreeWithSymbolValues(options) {
     solves
   } = await parseDMP(file, { scratchdir, gamsexe }, referenceTree);
   
-  const lst = await execDMP(dumpFile, { scratchdir, gamsexe });
+  const lst = await execDMP(dumpFile, { scratchdir, gamsexe, filePath });
   
   try {
     await getData(lst, solves, solvesStore, referenceTree);
@@ -35,6 +36,8 @@ module.exports = async function createRefTreeWithSymbolValues(options) {
   }
   
   // save new data in store
+  console.log('solvesStore', solvesStore);
+  
   state.update("solves", solvesStore);
   state.update("referenceTree", referenceTree);
 };
@@ -110,7 +113,9 @@ function parseDMP(file, config, referenceTree) {
 function execDMP(dumpFile, config) {
   return new Promise((resolve) => {
     const listingPath = `${dumpFile.path}.lst`;
-    const gamsParams = `"${config.gamsexe}" "${dumpFile.path}" o="${listingPath}" suppress=1 pageWidth=80 pageSize=0 lo=3 resLim=0 -scrdir="${config.scratchdir}"`;
+    console.log("filepaths", config.filePath);
+    
+    const gamsParams = `"${config.gamsexe}" "${dumpFile.path}" -workdir="${config.filePath}" -curDir="${config.filePath}" o="${listingPath}" suppress=1 pageWidth=80 pageSize=0 lo=3 resLim=0 -scrdir="${config.scratchdir}"`;
     
     shell.cd(config.scratchdir);
     
@@ -119,9 +124,9 @@ function execDMP(dumpFile, config) {
         console.log('Error in dmp exec: ' + stdout, stderr);
         // reject(stderr)
       }
-      fs.unlink(dumpFile.path, (err) => {
-        if (err) throw err;
-      });      
+      // fs.unlink(dumpFile.path, (err) => {
+      //   if (err) throw err;
+      // });      
       resolve(listingPath);
     });
 
@@ -164,7 +169,9 @@ function getData(lst, solves, gamsSolves, referenceTree) {
 
     rl.on('line', (line) => {
       // Save current section of the listing file and the associated solve
-      if (line.includes('E x e c u t i o n')) {
+      if (line.includes('C o m p i l a t i o n'))  {
+        curSection = 'Compilation';
+      } else if (line.includes('E x e c u t i o n')) {
         curSection = 'Displays';
       } else if (line.includes('Equation Listing')) {
         curSection = 'Equations';
@@ -208,10 +215,10 @@ function getData(lst, solves, gamsSolves, referenceTree) {
         }
       }
       // abort if compilation errors
-      else if (line.includes('Error Messages') || line.includes('**** USER ERROR(S) ENCOUNTERED')) {
-        // rl.close()
-        // stream.destroy()
-        console.log('User errors in DMP lst file', lst);
+      else if (curSection === 'Compilation' && line.includes('****')) {
+        foundError = true;
+        reject("Compilation error in DMP .lst file");
+      } else if (line.includes('Error Messages') || line.includes('**** USER ERROR(S) ENCOUNTERED')) {
         foundError = true;
         reject("User error in DMP .lst file");
       }

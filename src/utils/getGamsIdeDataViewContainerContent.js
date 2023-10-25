@@ -45,8 +45,37 @@ module.exports = function getGamsIdeDataViewContainerContent(options) {
     .link:hover {
       text-decoration: underline;
     }
+
+    #loading-container {
+      display: inline-flex;
+      flex-wrap: nowrap;
+      align-items: center;
+      column-gap: 15px;
+      position: fixed;
+      top: 15px;
+      left: 20px;
+    }
+
+    .loading {
+      display: inline-block;
+      width: 20px;
+      height: 20px;
+      border: 3px solid var(--background);
+      border-radius: 50%;
+      border-top-color: var(--vscode-foreground);
+      animation: spin 1s ease-in-out infinite;
+      -webkit-animation: spin 1s ease-in-out infinite;
+    }
+    
+    @keyframes spin {
+      to { -webkit-transform: rotate(360deg); }
+    }
+    @-webkit-keyframes spin {
+      to { -webkit-transform: rotate(360deg); }
+    }
   </style>
   <body>
+    <div id="loading-container"><div class="loading"></div><div>Loading...</div></div>
     <div class="dropdown-container">
       <label for="my-dropdown">Selected solve statement:</label>  
       <vscode-dropdown id="gams-symbols-dropdown">
@@ -68,20 +97,13 @@ module.exports = function getGamsIdeDataViewContainerContent(options) {
       vsCodeDropdown(), 
       vsCodeOption()
     );
-    // let currentSolve = {
-    //   model: "Compile time",
-    //   line: 0
-    // };
     let currentSolve = "";
-    // let solves = [{
-    //   model: "Compile time",
-    //   line: 0
-    // }];
     let solves = [];
     let data = {};
 
     const dropdown = document.getElementById('gams-symbols-dropdown');
     const content = document.getElementById('gams-symbols-content');
+    const loadingContainer = document.getElementById('loading-container');
 
     window.enableDataParsing = function() {
       vscode.postMessage({
@@ -92,6 +114,12 @@ module.exports = function getGamsIdeDataViewContainerContent(options) {
     window.addEventListener('message', event => {
       const message = event.data; // The json data that the extension sent
       switch (message.command) {
+        case 'startedDataParsing':
+          loadingContainer.innerHTML = '<div class="loading"></div>Loading...</div>';
+          break;
+        case 'finishedDataParsing':
+          loadingContainer.innerHTML = '';
+          break;
         case 'isDataParsingEnabled':
           if (message.data.isDataParsingEnabled) {
             content.innerHTML = "No data to show. Click on a symbol to get started!";
@@ -104,12 +132,20 @@ module.exports = function getGamsIdeDataViewContainerContent(options) {
           while (dropdown.firstChild) {
             dropdown.removeChild(dropdown.firstChild);
           }
-          // show error message
-          content.innerHTML = \`No data available for symbol <b>\${message.data.symbol}</b>.<br>If you expect this symbol to be available, check for compilation errors and program flow.\`
+          if (!message.data.solves || message.data.solves.length === 0) {
+            content.innerHTML = \`<b>No solve statement found.</b> At least one solve statement is required for symbol parsing.\`
+          } else {
+            // show error message
+            content.innerHTML = \`No data available for symbol <b>\${message.data.symbol}</b>.<br>If you expect this symbol to be available, check for compilation errors and program flow.\`
+          }
         case 'updateSolveData':
           // delete all options of the dropdown
           while (dropdown.firstChild) {
             dropdown.removeChild(dropdown.firstChild);
+          }
+          if (!message.data.solves || message.data.solves.length === 0) {
+            content.innerHTML = \`<b>No solve statement found.</b> At least one solve statement is required for symbol parsing.\`
+            return;
           }
           if (!message.data.data) {
             content.innerHTML = \`No data available for symbol <b>\${message.data.symbol}</b>.<br>If you expect this symbol to be available, check for compilation errors and program flow.\`

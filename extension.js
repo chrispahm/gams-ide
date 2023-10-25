@@ -81,6 +81,7 @@ async function activate(context) {
   // start listening to save events to generate diagnostics
   context.subscriptions.push(
     vscode.workspace.onDidSaveTextDocument(async (document) => {
+      // check if "runDiagnosticsOnSave" is enabled
       if (document && document.languageId === "gams") {
         await updateDiagnostics({ document, collection, gamsDataView, state, terminal });
       }
@@ -345,10 +346,11 @@ async function activate(context) {
                   selections: vscode.window.activeTextEditor?.selections,
                 }, gamsDataView, state, gamsView });
                 const curSymbol = state.get("curSymbol");
-                curSymbol.domain = curSymbol.domain?.map((domain) => ({ name: domain.name }));
-                curSymbol.subsets = curSymbol.subsets?.map((subset) => ({ name: subset.name }));
 
                 if (curSymbol) {
+                  curSymbol.domain = curSymbol.domain?.map((domain) => ({ name: domain.name }));
+                  curSymbol.subsets = curSymbol.subsets?.map((subset) => ({ name: subset.name }));
+
                   webviewView.webview.postMessage({
                     command: "updateReference",
                     data: curSymbol
@@ -378,6 +380,7 @@ async function activate(context) {
       // Implement the resolveWebviewView method
       resolveWebviewView(webviewView) {
         gamsDataView = webviewView;
+        state.update("gamsDataView", gamsDataView);
         // Set the webview options
         webviewView.webview.options = {
           enableScripts: true
@@ -412,7 +415,7 @@ async function activate(context) {
   // create the gams data view
   gamsDataViewDisposable = vscode.window.registerWebviewViewProvider('gamsIdeDataView', createGamsDataView());
   context.subscriptions.push(gamsDataViewDisposable);
-
+  
   // add a command to open the gams data view sidebar
   showDataViewCommandDisposable = vscode.commands.registerCommand("gams.openDataPanel", () => {
     // make sure the bottom panel is open

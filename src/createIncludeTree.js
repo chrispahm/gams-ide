@@ -58,7 +58,7 @@ function createGAMSIncludeTreeProvider(state) {
     }
 
     findRecursive(treeView, filePath) {
-      if (treeView.resourceUri.fsPath == filePath) {
+      if (treeView?.resourceUri?.fsPath == filePath) {
         return treeView;
       } else {
         for (const child of treeView.children) {
@@ -256,7 +256,7 @@ function createIncludeTree(parsedIncludes, options = {}) {
           node.command = {
             command: "gams.openFile",
             title: "Open file",
-            arguments: [treeView.lastEntry.resourceUri, entry.local]
+            arguments: [treeView.lastEntry?.resourceUri, entry.local]
           };
           node = {
             ...entry,
@@ -280,7 +280,7 @@ function createIncludeTree(parsedIncludes, options = {}) {
           node.command = {
             command: "gams.openFile",
             title: "Open file",
-            arguments: [parentEntry.resourceUri, entry.local]
+            arguments: [parentEntry?.resourceUri, entry.local]
           };
           node = {
             ...entry,
@@ -307,7 +307,7 @@ function createIncludeTree(parsedIncludes, options = {}) {
           node.command = {
             command: "gams.openFile",
             title: "Open file",
-            arguments: [parentEntry.resourceUri, entry.local]
+            arguments: [parentEntry?.resourceUri, entry.local]
           };
           node = {
             ...entry,
