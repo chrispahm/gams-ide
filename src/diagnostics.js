@@ -67,7 +67,7 @@ module.exports = async function updateDiagnostics(args) {
       // delete the error file, but do not wait for it
       unlink(compileCommand.errorPath);
       // if include parsing is enabled, parse the include file summary
-      parseIncludeFileSummary(compileCommand.listingPath, state).then(({ includeFileSummary, compileTimeVariables }) => {        
+      parseIncludeFileSummary(compileCommand.listingPath, state).then(({ includeFileSummary, compileTimeVariables }) => {
         state.update("parsedIncludes", includeFileSummary);
         state.update("compileTimeVariables", compileTimeVariables);
         // call the refresh command on the include tree view
@@ -109,16 +109,23 @@ module.exports = async function updateDiagnostics(args) {
             console.error("error", err);
           });
           */
+          state.get("gamsDataView")?.webview?.postMessage({
+            command: "startedDataParsing",
+          });
           createRefTreeWithSymbolValues({
             file: compileCommand.dumpPath,
             scratchdir: compileCommand.scratchDirectory,
             gamsexe: compileCommand.gamsExe,
+            filePath: compileCommand.filePath,
             state
           }).then(() => {
             // call the refresh command on the include tree view
             vscode.commands.executeCommand("gams.getSymbolUnderCursor");
             // delete the dmp lst file, but do not wait for it
-            unlink(compileCommand.dumpPath + ".lst");
+            // indicate that data parsing is finished            
+            state.get("gamsDataView")?.webview?.postMessage({
+              command: "finishedDataParsing",
+            });
           }).catch(err => {
             // show error in VS Code output
             // and add button to open the dmp file
@@ -140,6 +147,9 @@ module.exports = async function updateDiagnostics(args) {
               unlink(compileCommand.dumpPath + ".lst");
             }
             vscode.commands.executeCommand("gams.getSymbolUnderCursor");
+            state.get("gamsDataView")?.webview?.postMessage({
+              command: "finishedDataParsing",
+            });
           });
         }
         // return early

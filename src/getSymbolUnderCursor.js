@@ -8,6 +8,7 @@ module.exports = async function getSymbolUnderCursor(args) {
     state,
     gamsView
   } = args;
+  
   /*
   const document = editor.document;
   const position = editor.selection.active;
@@ -96,7 +97,7 @@ module.exports = async function getSymbolUnderCursor(args) {
         }
       }
     }
-
+    
     if (matchingRef && gamsView) {
       const data = {
         ...matchingRef,
@@ -151,7 +152,8 @@ module.exports = async function getSymbolUnderCursor(args) {
       gamsDataView.webview.postMessage({
         command: "updateSymbolError",
         data: {
-          symbol: word
+          symbol: word,
+          solves: solves
         }
       });
     }
