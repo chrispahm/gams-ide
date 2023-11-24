@@ -1,7 +1,8 @@
 # gams-ide
 
-**🚧 This package is still in early development. If you run into issues, please submit an issue here on GitHub, or write a short mail.
-The package is not in the VSCode marketplace yet, so you need to install it manually. See [Installation](#installation) below. 🚧**
+> [!WARNING]
+> 🚧 This package is still in early development. If you run into issues, please submit an issue here on GitHub, or write a short mail.
+> The package is not in the VSCode marketplace yet, so you need to install it manually. See [Installation](#installation) below. 🚧**
 
 A GAMS IDE plugin for VSCode. Provides a compilation checker for your [GAMS](https://www.gams.com/) models,
 a sidebar for symbol investigation/navigation, and a symbol panel. Also supports listing files (.lst). Successor of the [linter-gams](https://github.com/chrispahm/linter-gams) extension for Atom.
@@ -9,7 +10,7 @@ a sidebar for symbol investigation/navigation, and a symbol panel. Also supports
 ![gams-ide](https://github.com/chrispahm/linter-gams/assets/20703207/1a615b3c-1908-48fe-ab9c-a7497c91b8f8)
 
 ## Installation
-You can download the latest version of the package from the [releases page]() and install it manually by opening the command palette (`ctrl-shift-p`) and typing `Extensions: Install from VSIX...`. Then select the downloaded file.
+You can download the latest version of the package from the [releases page](https://github.com/chrispahm/gams-ide/releases) and install it manually by opening the command palette (`ctrl-shift-p`) and typing `Extensions: Install from VSIX...`. Then select the downloaded file.
 
 ## Configuration
 ### Global configuration
