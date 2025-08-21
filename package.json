@@ -1,0 +1,582 @@
+{
+  "name": "gams-ide",
+  "displayName": "gams-ide",
+  "description": "A GAMS integrated development environment for VSCode",
+  "version": "0.0.93",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/chrispahm/gams-ide"
+  },
+  "license": "MIT",
+  "publisher": "chrispahm",
+  "engines": {
+    "vscode": "^1.70.0"
+  },
+  "categories": [
+    "Other"
+  ],
+  "activationEvents": [
+    "onLanguage:gams"
+  ],
+  "contributes": {
+    "commands": [
+      {
+        "command": "gams.run",
+        "title": "GAMS: Run"
+      },
+      {
+        "command": "gams.runThisFile",
+        "title": "GAMS: Run this file"
+      },
+      {
+        "command": "gams.updateDiagnostics",
+        "title": "GAMS: Check errors"
+      },
+      {
+        "command": "gams.updateData",
+        "title": "GAMS: Update data"
+      },
+      {
+        "command": "gams.compile",
+        "title": "GAMS: Compile"
+      },
+      {
+        "command": "gams.compileThisFile",
+        "title": "GAMS: Compile this file"
+      },
+      {
+        "command": "gams.openSidebar",
+        "title": "GAMS: Open Sidebar"
+      },
+      {
+        "command": "gams.openSymbolPanel",
+        "title": "GAMS: Open Symbol Panel"
+      },
+      {
+        "command": "gams.stop",
+        "title": "GAMS: Stop"
+      },
+      {
+        "command": "gams.kill",
+        "title": "GAMS: Kill"
+      },
+      {
+        "command": "gams.setAsMainGmsFile",
+        "title": "GAMS: Set as main GAMS file"
+      },
+      {
+        "command": "gams.clearMainGmsFile",
+        "title": "GAMS: Clear main GAMS file"
+      },
+      {
+        "command": "gams.addToExcludeFromMainGmsFile",
+        "title": "GAMS: Add to exclude from main GAMS file list"
+      },
+      {
+        "command": "gams.removeFromExcludeFromMainGmsFile",
+        "title": "GAMS: Remove from exclude from main GAMS file list"
+      },
+      {
+        "command": "gams.selectMainGmsFile",
+        "title": "GAMS: Select main GAMS file"
+      },
+      {
+        "command": "gams.followIncludePath",
+        "title": "GAMS: Follow include path"
+      },
+      {
+        "command": "gams.modelTree.showEXIT",
+        "title": "  EXIT"
+      },
+      {
+        "command": "gams.modelTree.hideEXIT",
+        "title": "✓  EXIT"
+      },
+      {
+        "command": "gams.modelTree.showINCLUDE",
+        "title": "  INCLUDE"
+      },
+      {
+        "command": "gams.modelTree.hideINCLUDE",
+        "title": "✓  INCLUDE"
+      },
+      {
+        "command": "gams.modelTree.showBATINCLUDE",
+        "title": "  BATINCLUDE"
+      },
+      {
+        "command": "gams.modelTree.hideBATINCLUDE",
+        "title": "✓  BATINCLUDE"
+      },
+      {
+        "command": "gams.modelTree.showLIBINCLUDE",
+        "title": "  LIBINCLUDE"
+      },
+      {
+        "command": "gams.modelTree.hideLIBINCLUDE",
+        "title": "✓  LIBINCLUDE"
+      },
+      {
+        "command": "gams.modelTree.showSYSINCLUDE",
+        "title": "  SYSINCLUDE"
+      },
+      {
+        "command": "gams.modelTree.hideSYSINCLUDE",
+        "title": "✓  SYSINCLUDE"
+      },
+      {
+        "command": "gams.modelTree.showCALL",
+        "title": "  CALL"
+      },
+      {
+        "command": "gams.modelTree.hideCALL",
+        "title": "✓  CALL"
+      },
+      {
+        "command": "gams.modelTree.showCALL.ASYNC",
+        "title": "  CALL.ASYNC"
+      },
+      {
+        "command": "gams.modelTree.hideCALL.ASYNC",
+        "title": "✓  CALL.ASYNC"
+      },
+      {
+        "command": "gams.modelTree.showCALL.TOOL",
+        "title": "  CALL.TOOL"
+      },
+      {
+        "command": "gams.modelTree.hideCALL.TOOL",
+        "title": "✓  CALL.TOOL"
+      },
+      {
+        "command": "gams.modelTree.showGDXIN",
+        "title": "  GDXIN"
+      },
+      {
+        "command": "gams.modelTree.hideGDXIN",
+        "title": "✓  GDXIN"
+      },
+      {
+        "command": "gams.modelTree.showGDXOUT",
+        "title": "  GDXOUT"
+      },
+      {
+        "command": "gams.modelTree.hideGDXOUT",
+        "title": "✓  GDXOUT"
+      },
+      {
+        "command": "gams.modelTree.showIF_EXIST",
+        "title": "  IF_EXIST"
+      },
+      {
+        "command": "gams.modelTree.hideIF_EXIST",
+        "title": "✓  IF_EXIST"
+      },
+      {
+        "command": "gams.modelTree.showIF_DEXIST",
+        "title": "  IF_DEXIST"
+      },
+      {
+        "command": "gams.modelTree.hideIF_DEXIST",
+        "title": "✓  IF_DEXIST"
+      },
+      {
+        "command": "gams.modelTree.showFUNCLIBIN",
+        "title": "  FUNCLIBIN"
+      },
+      {
+        "command": "gams.modelTree.hideFUNCLIBIN",
+        "title": "✓  FUNCLIBIN"
+      },
+      {
+        "command": "gams.modelTree.showTERMINATE",
+        "title": "  TERMINATE"
+      },
+      {
+        "command": "gams.modelTree.hideTERMINATE",
+        "title": "✓  TERMINATE"
+      },
+      {
+        "command": "gams.modelTree.showSTOP",
+        "title": "  STOP"
+      },
+      {
+        "command": "gams.modelTree.hideSTOP",
+        "title": "✓  STOP"
+      },
+      {
+        "command": "gams.modelTree.hideFile",
+        "title": "Hide file from tree view",
+        "icon": {
+          "dark": "media/dark/hide.svg",
+          "light": "media/light/hide.svg"
+        }
+      },
+      {
+        "command": "gams.modelTree.resetHiddenFiles",
+        "title": "Reset hidden files",
+        "icon": {
+          "dark": "media/dark/reset.svg",
+          "light": "media/light/reset.svg"
+        }
+      }
+    ],
+    "keybindings": [
+      {
+        "command": "gams.followIncludePath",
+        "key": "alt+x"
+      }
+    ],
+    "configuration": {
+      "title": "GAMS-IDE",
+      "properties": {
+        "gamsIde.gamsExecutable": {
+          "description": "Path to GAMS executable, will default to PATH or common install directories.",
+          "type": "string",
+          "default": ""
+        },
+        "gamsIde.scratchDirectory": {
+          "description": "The (scratch) directory where gams-ide will read/write temp files. Ideally located on a fast internal disk.",
+          "type": "string",
+          "default": ""
+        },
+        "gamsIde.runDiagnosticsOnSave": {
+          "description": "Compile the model when saving any file in the workspace. This is necessary to show diagnostics (e.g. errors) in the editor.",
+          "type": "boolean",
+          "default": true
+        },
+        "gamsIde.enableModelIncludeTreeView": {
+          "description": "Enable a tree view of all includes/batincludes of the model in the sidebar. Make sure that the 'Include File Summary' is printed to the listing file, and $offInclude isn't present in the model source.",
+          "type": "boolean",
+          "default": true
+        },
+        "gamsIde.maxErrorsToDisplay": {
+          "description": "Maximum amount of errors that will be highlighted by gams-ide. Put a 0 if no maximum should be defined. Keep in mind that often only the first error is an actual GAMS error, while the subsequent errors may result from the first error.",
+          "type": "integer",
+          "default": 1
+        },
+        "gamsIde.showCompilationNotifications": {
+          "description": "Notify when GAMS encountered system issues (e.g. missing .opt files) during compilation.",
+          "type": "boolean",
+          "default": true
+        },
+        "gamsIde.jumpToFirstError": {
+          "description": "Automatically scroll to the first error in the listing file when compilation errors are encountered.",
+          "type": "boolean",
+          "default": true
+        },
+        "gamsIde.jumpToAbort": {
+          "description": "If found, automatically scroll to the first abort parameter found in the listing file.",
+          "type": "boolean",
+          "default": true
+        },
+        "gamsIde.autoUnfoldListingEntriesTreshold": {
+          "description": "Automatically unfold listing entries (e.g. Displays) if their amount does not exceed the following value.",
+          "type": "integer",
+          "default": 10
+        },
+        "gamsIde.onlyAutoUnfoldDisplayStatements": {
+          "description": "Limit 'Auto unfold listing entries treshold' to display statements. Other listing entries will not be unfolded automatically.",
+          "type": "boolean",
+          "default": true
+        },
+        "gamsIde.defaultParameterToJumpToAfterSolve": {
+          "description": "If found, the listing will be auto-scrolled to the following display paramter.",
+          "type": "string",
+          "default": "p_sumRes"
+        },
+        "gamsIde.autoScrollToEndOfListing": {
+          "description": "Automatically scroll to the end of the listing after a solve.",
+          "type": "boolean",
+          "default": true
+        },
+        "gamsIde.mainGmsFile": {
+          "description": "Main GAMS file to execute if your model consists of multiple files. This file will be executed when you press the 'Run' button, and compiled when saving any file in your workspace. Common main GMS files are 'exp_starter.gms' (FarmDyn), 'capmod.gms' (CAPRI), and 'com_.gms' (CGEBOX).",
+          "type": "string",
+          "default": "exp_starter.gms"
+        },
+        "gamsIde.excludeFromMainGmsFile": {
+          "description": "Ignore the 'main GAMS file' setting for these files and folders. This is useful if you have a file or folders that are only used for data generation, but not for the actual model. Note: Only relative and absolute paths without glob characters are supported. Relative paths are relative to the (first) workspace root.",
+          "type": "array",
+          "default": []
+        },
+        "gamsIde.commandLineArguments_compilation": {
+          "description": "Additional command line arguments to pass to GAMS during compilation.",
+          "type": "array",
+          "default": []
+        },
+        "gamsIde.commandLineArguments_execution": {
+          "description": "Additional command line arguments to pass to GAMS during execution.",
+          "type": "array",
+          "default": []
+        },
+        "gamsIde.parseGamsData": {
+          "description": "Show values of sets parameters, as well as the variable and equation listing for each solve in a console panel in the bottom dock. This will execute your model with a resource limit of 0, meaning the solver will terminate after 0 second. Still, this may take a while for large models.",
+          "type": "boolean",
+          "default": false
+        },
+        "gamsIde.parseGamsDataWithDiagnostics": {
+          "description": "If parseGamsData is enabled, this option will update the GAMS data every time the diagnostics are updated (model compilation). If runDiagnosticsOnSave is enabled, this means your model is executed every time a document is saved.",
+          "type": "boolean",
+          "default": true
+        },
+        "gamsIde.parseGamsDataResLim": {
+          "description": "Resource limit (resLim) setting when executing the model in order to parse GAMS data values. Defaults to 0.",
+          "type": "integer",
+          "default": 0
+        },
+        "gamsIde.consoleLimrow": {
+          "description": "LIMROW setting if parse symbol values is turned on",
+          "type": "integer",
+          "default": 3
+        },
+        "gamsIde.consoleLimcol": {
+          "description": "LIMCOL setting if parse symbol values is turned on",
+          "type": "integer",
+          "default": 3
+        },
+        "gamsIde.consoleDispWidth": {
+          "description": "dispWidth setting if parse symbol values is turned on",
+          "type": "integer",
+          "default": 15
+        }
+      }
+    },
+    "viewsContainers": {
+      "activitybar": [
+        {
+          "id": "gamsIdeViewContainer",
+          "title": "GAMS References",
+          "icon": "media/logo.svg"
+        }
+      ],
+      "panel": [
+        {
+          "id": "gamsIdeSymbolContainer",
+          "title": "GAMS Data",
+          "icon": "media/logo.svg"
+        }
+      ]
+    },
+    "menus": {
+      "view/title": [
+        {
+          "command": "gams.modelTree.resetHiddenFiles",
+          "when": "view == gamsIdeModelTree",
+          "group": "navigation"
+        },
+        {
+          "command": "gams.modelTree.hideEXIT",
+          "when": "view == gamsIdeModelTree && !gamsIde:modelTreeIsHiddenEXIT",
+          "group": "includeTypes"
+        },
+        {
+          "command": "gams.modelTree.showEXIT",
+          "when": "view == gamsIdeModelTree && gamsIde:modelTreeIsHiddenEXIT",
+          "group": "includeTypes"
+        },
+        {
+          "command": "gams.modelTree.hideINCLUDE",
+          "when": "view == gamsIdeModelTree && !gamsIde:modelTreeIsHiddenINCLUDE",
+          "group": "includeTypes"
+        },
+        {
+          "command": "gams.modelTree.showINCLUDE",
+          "when": "view == gamsIdeModelTree && gamsIde:modelTreeIsHiddenINCLUDE",
+          "group": "includeTypes"
+        },
+        {
+          "command": "gams.modelTree.hideBATINCLUDE",
+          "when": "view == gamsIdeModelTree && !gamsIde:modelTreeIsHiddenBATINCLUDE",
+          "group": "includeTypes"
+        },
+        {
+          "command": "gams.modelTree.showBATINCLUDE",
+          "when": "view == gamsIdeModelTree && gamsIde:modelTreeIsHiddenBATINCLUDE",
+          "group": "includeTypes"
+        },
+        {
+          "command": "gams.modelTree.hideLIBINCLUDE",
+          "when": "view == gamsIdeModelTree && !gamsIde:modelTreeIsHiddenLIBINCLUDE",
+          "group": "includeTypes"
+        },
+        {
+          "command": "gams.modelTree.showLIBINCLUDE",
+          "when": "view == gamsIdeModelTree && gamsIde:modelTreeIsHiddenLIBINCLUDE",
+          "group": "includeTypes"
+        },
+        {
+          "command": "gams.modelTree.hideSYSINCLUDE",
+          "when": "view == gamsIdeModelTree && !gamsIde:modelTreeIsHiddenSYSINCLUDE",
+          "group": "includeTypes"
+        },
+        {
+          "command": "gams.modelTree.showSYSINCLUDE",
+          "when": "view == gamsIdeModelTree && gamsIde:modelTreeIsHiddenSYSINCLUDE",
+          "group": "includeTypes"
+        },
+        {
+          "command": "gams.modelTree.hideCALL",
+          "when": "view == gamsIdeModelTree && !gamsIde:modelTreeIsHiddenCALL",
+          "group": "includeTypes"
+        },
+        {
+          "command": "gams.modelTree.showCALL",
+          "when": "view == gamsIdeModelTree && gamsIde:modelTreeIsHiddenCALL",
+          "group": "includeTypes"
+        },
+        {
+          "command": "gams.modelTree.hideCALL.ASYNC",
+          "when": "view == gamsIdeModelTree && !gamsIde:modelTreeIsHiddenCALL.ASYNC",
+          "group": "includeTypes"
+        },
+        {
+          "command": "gams.modelTree.showCALL.ASYNC",
+          "when": "view == gamsIdeModelTree && gamsIde:modelTreeIsHiddenCALL.ASYNC",
+          "group": "includeTypes"
+        },
+        {
+          "command": "gams.modelTree.hideCALL.TOOL",
+          "when": "view == gamsIdeModelTree && !gamsIde:modelTreeIsHiddenCALL.TOOL",
+          "group": "includeTypes"
+        },
+        {
+          "command": "gams.modelTree.showCALL.TOOL",
+          "when": "view == gamsIdeModelTree && gamsIde:modelTreeIsHiddenCALL.TOOL",
+          "group": "includeTypes"
+        },
+        {
+          "command": "gams.modelTree.hideGDXIN",
+          "when": "view == gamsIdeModelTree && !gamsIde:modelTreeIsHiddenGDXIN",
+          "group": "includeTypes"
+        },
+        {
+          "command": "gams.modelTree.showGDXIN",
+          "when": "view == gamsIdeModelTree && gamsIde:modelTreeIsHiddenGDXIN",
+          "group": "includeTypes"
+        },
+        {
+          "command": "gams.modelTree.hideGDXOUT",
+          "when": "view == gamsIdeModelTree && !gamsIde:modelTreeIsHiddenGDXOUT",
+          "group": "includeTypes"
+        },
+        {
+          "command": "gams.modelTree.showGDXOUT",
+          "when": "view == gamsIdeModelTree && gamsIde:modelTreeIsHiddenGDXOUT",
+          "group": "includeTypes"
+        },
+        {
+          "command": "gams.modelTree.hideIF_EXIST",
+          "when": "view == gamsIdeModelTree && !gamsIde:modelTreeIsHiddenIF_EXIST",
+          "group": "includeTypes"
+        },
+        {
+          "command": "gams.modelTree.showIF_EXIST",
+          "when": "view == gamsIdeModelTree && gamsIde:modelTreeIsHiddenIF_EXIST",
+          "group": "includeTypes"
+        },
+        {
+          "command": "gams.modelTree.hideIF_DEXIST",
+          "when": "view == gamsIdeModelTree && !gamsIde:modelTreeIsHiddenIF_DEXIST",
+          "group": "includeTypes"
+        },
+        {
+          "command": "gams.modelTree.showIF_DEXIST",
+          "when": "view == gamsIdeModelTree && gamsIde:modelTreeIsHiddenIF_DEXIST",
+          "group": "includeTypes"
+        },
+        {
+          "command": "gams.modelTree.hideFUNCLIBIN",
+          "when": "view == gamsIdeModelTree && !gamsIde:modelTreeIsHiddenFUNCLIBIN",
+          "group": "includeTypes"
+        },
+        {
+          "command": "gams.modelTree.showFUNCLIBIN",
+          "when": "view == gamsIdeModelTree && gamsIde:modelTreeIsHiddenFUNCLIBIN",
+          "group": "includeTypes"
+        },
+        {
+          "command": "gams.modelTree.hideTERMINATE",
+          "when": "view == gamsIdeModelTree && !gamsIde:modelTreeIsHiddenTERMINATE",
+          "group": "includeTypes"
+        },
+        {
+          "command": "gams.modelTree.showTERMINATE",
+          "when": "view == gamsIdeModelTree && gamsIde:modelTreeIsHiddenTERMINATE",
+          "group": "includeTypes"
+        },
+        {
+          "command": "gams.modelTree.hideSTOP",
+          "when": "view == gamsIdeModelTree && !gamsIde:modelTreeIsHiddenSTOP",
+          "group": "includeTypes"
+        },
+        {
+          "command": "gams.modelTree.showSTOP",
+          "when": "view == gamsIdeModelTree && gamsIde:modelTreeIsHiddenSTOP",
+          "group": "includeTypes"
+        }
+      ],
+      "view/item/context": [
+        {
+          "command": "gams.modelTree.hideFile",
+          "when": "view == gamsIdeModelTree",
+          "group": "inline"
+        }
+      ]
+    },
+    "views": {
+      "explorer": [
+        {
+          "id": "gamsIdeModelTree",
+          "name": "GAMS Model Tree"
+        }
+      ],
+      "gamsIdeViewContainer": [
+        {
+          "type": "webview",
+          "id": "gamsIdeView",
+          "name": ""
+        }
+      ],
+      "gamsIdeSymbolContainer": [
+        {
+          "type": "webview",
+          "id": "gamsIdeDataView",
+          "name": ""
+        }
+      ]
+    }
+  },
+  "main": "./out/extension.js",
+  "scripts": {
+    "vscode:prepublish": "npm run compile",
+    "compile": "tsc -p ./",
+    "watch": "tsc -watch -p ./",
+    "pretest": "npm run compile && npm run lint",
+    "lint": "eslint src",
+    "test": "vscode-test"
+  },
+  "devDependencies": {
+    "@types/mocha": "^10.0.10",
+    "@types/node": "22.x",
+    "@types/vscode": "^1.103.0",
+    "@typescript-eslint/eslint-plugin": "^8.39.0",
+    "@typescript-eslint/parser": "^8.39.0",
+    "@vscode/test-cli": "^0.0.11",
+    "@vscode/test-electron": "^2.5.2",
+    "eslint": "^9.32.0",
+    "typescript": "^5.9.2",
+    "vitepress": "^1.6.4",
+    "vue3-carousel": "^0.16.0"
+  },
+  "dependencies": {
+    "@vscode/codicons": "^0.0.33",
+    "glob": "^10.2.7",
+    "lodash": "^4.17.21",
+    "readline-specific": "^1.0.4",
+    "shelljs": "^0.8.5"
+  },
+  "extensionDependencies": [
+    "lolow.gams"
+  ]
+}
