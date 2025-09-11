@@ -38,9 +38,9 @@ interface CompileCommandResult {
 }
 
 interface IncludeFileSummaryEntry {
-  file: string;
-  count: number;
-  depth: number;
+  file?: string;
+  count?: number;
+  depth?: number;
   parent?: string;
 }
 

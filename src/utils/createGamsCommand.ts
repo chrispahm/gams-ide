@@ -46,7 +46,7 @@ export default async function createGamsCommand(docFileName: string, extraArgs: 
     
   // perform a quick check if the current file is excluded from the main GMS file
   if (!ignoreMainGmsFile && mainGmsFile) {
-    ignoreMainGmsFile = checkIfExcluded(docFileName, defaultSettings.get("excludeFromMainGmsFile"));
+    ignoreMainGmsFile = checkIfExcluded(docFileName, defaultSettings.get("excludeFromMainGmsFile")) ? true : false;
   }
   // if a main GMS file is specified, we try to find the file in the workspace
   if (mainGmsFile && vscode.workspace.workspaceFolders && vscode.workspace.workspaceFolders.length && !ignoreMainGmsFile) {

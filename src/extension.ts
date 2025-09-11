@@ -148,7 +148,6 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
 		})
 	);
 
-
 	// register status bar item showing the current main file
 	gamsStatusBarItem = vscode.window.createStatusBarItem(vscode.StatusBarAlignment.Right, 100);
 	context.subscriptions.push(gamsStatusBarItem);
