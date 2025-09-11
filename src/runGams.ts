@@ -1,14 +1,14 @@
-const vscode = require("vscode");
-const createGamsCommand = require("./utils/createGamsCommand.js");
-const os = require("os");
-const path = require("path");
+import * as vscode from 'vscode';
+import createGamsCommand from './utils/createGamsCommand.js';
+import * as os from 'os';
+import * as path from 'path';
 
-async function openListing(listingPath) {
+async function openListing(listingPath: string): Promise<void> {
   const doc = await vscode.workspace.openTextDocument(listingPath);
   vscode.window.showTextDocument(doc);
 }
 
-export default async function runGams(terminal, compileOnly = false, ignoreMainGmsFile = false) {
+export default async function runGams(terminal: vscode.Terminal, compileOnly = false, ignoreMainGmsFile = false): Promise<void> {
   const editor = vscode.window.activeTextEditor;
   if (editor && (editor.document.languageId === "gams" || editor.document.fileName.toLowerCase().endsWith('.lst'))) {
     let fileToRun = editor.document.fileName;
@@ -17,7 +17,7 @@ export default async function runGams(terminal, compileOnly = false, ignoreMainG
     }
     const gamsCommand = await createGamsCommand(fileToRun, ["lo=3", compileOnly ? "a=c" : ""], ignoreMainGmsFile);
     // if the terminal has been closed, create a new one
-    if (terminal.exitStatus !== undefined) {
+    if ((terminal as vscode.Terminal | undefined)?.exitStatus !== undefined) {
       terminal = vscode.window.createTerminal("GAMS");
     }
     // show the terminal        
@@ -35,7 +35,7 @@ export default async function runGams(terminal, compileOnly = false, ignoreMainG
     // we try three times to open the listing file, with a timeout of 1 second
     // this is necessary because the listing file is not available immediately
     // after the GAMS file has been executed
-    for (let i = 0; i < 3; i++) {
+  for (let i = 0; i < 3; i++) {
       try {        
         await openListing(gamsCommand.listingPath);
         break;

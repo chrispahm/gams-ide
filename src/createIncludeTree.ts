@@ -1,8 +1,9 @@
-const readline = require('readline');
-const fs = require('fs');
-const vscode = require('vscode');
+import readline from 'readline';
+import fs from 'fs';
+import * as vscode from 'vscode';
+import State from './State';
 
-const includeTypes = [
+const includeTypes: string[] = [
   "EXIT",
   "INCLUDE",
   "BATINCLUDE",
@@ -20,8 +21,22 @@ const includeTypes = [
   "STOP"
 ];
 
-class gamsIncludeExplorer {
-  constructor(context, state) {
+export interface IncludeTreeEntry extends vscode.TreeItem {
+  seq: number;
+  global: number;
+  type: string;
+  parentIndex: number;
+  local: number;
+  filename: string;
+  children: IncludeTreeEntry[];
+  parent: IncludeTreeEntry | null;
+  lastEntry?: IncludeTreeEntry;
+}
+
+interface CreateIncludeTreeOptions { ignoreTypes?: string[]; ignoreFiles?: string[]; }
+
+export class gamsIncludeExplorer {
+  constructor(context: vscode.ExtensionContext, state: State) {
     const includeTreeProvider = createGAMSIncludeTreeProvider(state);
     const view = vscode.window.createTreeView("gamsIdeModelTree", {
       treeDataProvider: includeTreeProvider,
@@ -41,8 +56,10 @@ class gamsIncludeExplorer {
         // reveal the current file in the include tree
         // find the element in the treeview
         const includeTree = includeTreeProvider.treeView;
-        const elem = includeTreeProvider.findRecursive(includeTree, editor.document.fileName);
-        await view.reveal(elem, { focus: true, expand: true });
+        if (includeTree) {
+          const elem = includeTreeProvider.findRecursive(includeTree, editor.document.fileName);
+          if (elem) { await view.reveal(elem, { focus: true, expand: true }); }
+        }
       }
     }));
     // add a command that follows a path to the include file when in the corresponding line
@@ -55,12 +72,11 @@ class gamsIncludeExplorer {
       const position = editor.selection.active;
       // find the cuurrent file in the include tree
       const includeTree = includeTreeProvider.treeView;
-      const elem = includeTreeProvider.findRecursive(includeTree, document.fileName);
-      if (elem) {
-        // find the child element where the local line numer is equal to the current line number
-        const child = elem.children.find((child) => child.local === position.line + 1);
-        if (child) {
-          await vscode.window.showTextDocument(child.resourceUri , { preview: true });
+      if (includeTree) {
+        const elem = includeTreeProvider.findRecursive(includeTree, document.fileName);
+        if (elem) {
+          const child = elem.children.find((c: IncludeTreeEntry) => c.local === position.line + 1);
+          if (child?.resourceUri) { await vscode.window.showTextDocument(child.resourceUri, { preview: true }); }
         }
       }
     }));
@@ -68,89 +84,76 @@ class gamsIncludeExplorer {
   }
 }
 
-function createGAMSIncludeTreeProvider(state) {
-  class GAMSIncludeTreeProvider {
-    constructor() {
-      this._onDidChangeTreeData = new vscode.EventEmitter();
-      this.onDidChangeTreeData = this._onDidChangeTreeData.event;
-      this.shouldRefresh = false;
-    }
+export class GAMSIncludeTreeProvider implements vscode.TreeDataProvider<IncludeTreeEntry> {
+  private _onDidChangeTreeData: vscode.EventEmitter<IncludeTreeEntry | undefined | void> = new vscode.EventEmitter();
+  readonly onDidChangeTreeData = this._onDidChangeTreeData.event;
+  public shouldRefresh = false;
+  public treeView: IncludeTreeEntry | undefined;
+  constructor(private state: State) {}
 
-    findRecursive(treeView, filePath) {
-      if (treeView?.resourceUri?.fsPath == filePath) {
-        return treeView;
-      } else {
-        for (const child of treeView.children) {
-          const found = this.findRecursive(child, filePath);
-          if (found) {
-            return found;
-          }
-        }
+  findRecursive(treeView: IncludeTreeEntry | undefined, filePath: string): IncludeTreeEntry | undefined {
+    if (!treeView) { return undefined; }
+    if (treeView.resourceUri?.fsPath === filePath) { 
+      return treeView; 
+    }
+    for (const child of treeView.children) {
+      const found = this.findRecursive(child, filePath);
+      if (found) { 
+        return found; 
       }
     }
-
-    getTreeItem(element) {
-      return element;
-    }
-
-    getParent(element) {
-      if (!element) {
-        return undefined;
-      }
-      return element.parent;
-    }
-
-    async getChildren(element) {
-      if (!this.treeView || this.shouldRefresh) {
-        try {
-          const parsedIncludes = state.get("parsedIncludes");
-          if (!parsedIncludes) {
-            // no include tree in state -> return null
-            return null;
-          };
-          // check if any of the include types are hidden
-          const ignoreTypes = includeTypes.filter((type) => {
-            return state.get(`modelTreeIsHidden${type.replace(" ", "_")}`);
-          });
-          // check if any of the files are hidden
-          const ignoreFiles = state.get("ignoreFilesIncludeTree");
-          this.treeView = createIncludeTree(parsedIncludes, { ignoreTypes, ignoreFiles });
-          this.shouldRefresh = false;
-        } catch (err) {
-          vscode.window.showErrorMessage("Error creating model include tree: ", err.message);
-        }
-      }
-      if (!element) {
-        return [this.treeView];
-
-      } else {
-        return element.children;
-      }
-    }
-
-    refresh() {
-      this.shouldRefresh = true;
-      this._onDidChangeTreeData.fire();
-    }
+    return undefined;
   }
-  return new GAMSIncludeTreeProvider();
+  getTreeItem(element: IncludeTreeEntry): vscode.TreeItem { 
+    return element; 
+  }
+
+  getParent(element: IncludeTreeEntry): IncludeTreeEntry | null { 
+    return element.parent; 
+  }
+  async getChildren(element?: IncludeTreeEntry): Promise<IncludeTreeEntry[] | null | undefined> {
+    if (!this.treeView || this.shouldRefresh) {
+      try {
+        const parsedIncludes = this.state.get<IncludeTreeEntry[]>("parsedIncludes");
+        if (!parsedIncludes) { 
+          return null; 
+        }
+        const ignoreTypes = includeTypes.filter(type => !!this.state.get(`modelTreeIsHidden${type.replace(" ", "_")}`));
+        const ignoreFiles = this.state.get<string[]>("ignoreFilesIncludeTree");
+        this.treeView = createIncludeTree(parsedIncludes as unknown as any[], { ignoreTypes, ignoreFiles });
+        this.shouldRefresh = false;
+      } catch (err) {
+        const message = err instanceof Error ? err.message : String(err);
+        vscode.window.showErrorMessage("Error creating model include tree: " + message);
+      }
+    }
+  if (!element) { return this.treeView ? [this.treeView] : null; }
+    return element.children;
+  }
+  refresh(): void { this.shouldRefresh = true; this._onDidChangeTreeData.fire(); }
+}
+export function createGAMSIncludeTreeProvider(state: State): GAMSIncludeTreeProvider { 
+  return new GAMSIncludeTreeProvider(state); 
 }
 
-function parseIncludeFileSummary(lstFile, state) {
+interface CompileTimeVariableEntry { level: number; name: string; type: string; description: string; readonly data: Record<string, string> | null; }
+interface IncludeFileSummaryEntry { seq: number; global: number; type: string; parentIndex: number; local: number; filename: string; }
+export interface ParseIncludeFileSummaryResult { includeFileSummary: IncludeFileSummaryEntry[]; compileTimeVariables: CompileTimeVariableEntry[]; }
+
+export function parseIncludeFileSummary(lstFile: string, state: State): Promise<ParseIncludeFileSummaryResult> {
   const shouldParseInclude = vscode.workspace.getConfiguration("gamsIde").get("enableModelIncludeTreeView");
 
-  return new Promise((resolve, reject) => {
+  return new Promise<ParseIncludeFileSummaryResult>((resolve, reject) => {
     const rl = readline.createInterface({
       input: fs.createReadStream(lstFile),
       crlfDelay: Infinity
     });
-
-    const includeFileSummary = [];
-    const compileTimeVariables = [];
+    const includeFileSummary: IncludeFileSummaryEntry[] = [];
+    const compileTimeVariables: CompileTimeVariableEntry[] = [];
     let inIncludeFileSummary = false;
     let inCompileTimeVariableList = false;
 
-    rl.on('line', (line) => {
+    rl.on('line', (line: string) => {
       // skip empty lines
       if (line.length === 0 || line === "\r" || line === "\n") {
         return;
@@ -159,7 +162,7 @@ function parseIncludeFileSummary(lstFile, state) {
       } else if (line.startsWith("---- Begin of Compile-time Variable List")) {
         inCompileTimeVariableList = true;
       } else if (inIncludeFileSummary && line.match(/^\s/)) {
-        let tokens = line.split(/\s+/);
+  const tokens = line.split(/\s+/);
         // If the line has six tokens, then it is a valid entry
         if (tokens.length === 7) {
           // since we use the compile.gms file as the root, we need to remove it from the include file summary
@@ -171,34 +174,34 @@ function parseIncludeFileSummary(lstFile, state) {
             tokens[3] = "INPUT";
           }
           // Create an object with properties corresponding to each column
-          let file = {
-            seq: parseInt(tokens[1]), // Parse the sequence number as an integer
-            global: parseInt(tokens[2]), // Parse the global line number as an integer
-            type: tokens[3], // Keep the type as a string
-            parentIndex: parseInt(tokens[4]), // Parse the parent sequence number as an integer
-            local: parseInt(tokens[5]), // Parse the local line number as an integer
-            // strip any leading . characters from the file name
-            filename: fixFileName(tokens[6]) // Keep the filename as a string
+          const fixedName = fixFileName(tokens[6]);
+          const file: IncludeFileSummaryEntry = {
+            seq: parseInt(tokens[1]),
+            global: parseInt(tokens[2]),
+            type: tokens[3],
+            parentIndex: parseInt(tokens[4]),
+            local: parseInt(tokens[5]),
+            filename: fixedName ?? tokens[6]
           };
           // Push the object to the array
           includeFileSummary.push(file);
         }
       } else if (inCompileTimeVariableList && line.split(/\s+/).length >= 5) {        
-        let tokens = line.split(/\s+/);
+  const tokens = line.split(/\s+/);
         // If the line has six tokens, then it is a valid entry
         // Create an object with properties corresponding to each column
-        let file = {
+        const file: CompileTimeVariableEntry = {
           level: parseInt(tokens[1]),
           name: tokens[2],
           type: tokens[3],
           description: tokens.slice(4).join(" "),
           get data() {
-            const solves = state.get("solves");
+            const solves = state.get<{ line: number }[]>("solves");
             if (!solves) {
               return null;
             }
-            const data = {};
-            solves.forEach((solve) => {
+            const data: Record<string, string> = {};
+            solves.forEach((solve: { line: number }) => {
               data[`line_${Number(solve.line)}`] = `---- ${tokens[3]} ${tokens[2]}\n${tokens.slice(4).join(" ")}`;
             });
             return data;
@@ -221,13 +224,13 @@ function parseIncludeFileSummary(lstFile, state) {
       }
     });
 
-    rl.on('error', (err) => {
+    rl.on('error', (err: Error) => {
       reject(err);
     });
   });
 };
 
-function fixFileName(filename) {
+export function fixFileName(filename: string): string | undefined {
   // remove any leading . characters from the file name
   if (filename.startsWith(".")) {
     return /\.+(.*)/.exec(filename)?.[1];
@@ -235,11 +238,11 @@ function fixFileName(filename) {
   return filename;
 }
 
-function createIncludeTree(parsedIncludes, options = {}) {
+export function createIncludeTree(parsedIncludes: any[], options: CreateIncludeTreeOptions = {}): IncludeTreeEntry {
   const { ignoreTypes = [], ignoreFiles = [] } = options;
-
-  return parsedIncludes.reduce(
-    (treeView, entry, i, arr) => {
+  const initial: any = {};
+  const result = parsedIncludes.reduce(
+    (treeView: any, entry: any, i: number, arr: any[]) => {
       if (entry.type === "INPUT") {
         const Uri = vscode.Uri.file(entry.filename);
         treeView = new vscode.TreeItem(Uri, vscode.TreeItemCollapsibleState.Expanded);
@@ -267,7 +270,7 @@ function createIncludeTree(parsedIncludes, options = {}) {
         } else if (treeView.lastEntry.parentIndex < entry.parentIndex) {
           // this is a child node!
           const Uri = vscode.Uri.file(entry.filename);
-          let node = new vscode.TreeItem(Uri, vscode.TreeItemCollapsibleState.None);
+          let node: IncludeTreeEntry = new vscode.TreeItem(Uri, vscode.TreeItemCollapsibleState.None) as IncludeTreeEntry;
           node.description = entry.type;
           // use file icon as default
           node.iconPath = new vscode.ThemeIcon("file");
@@ -277,12 +280,7 @@ function createIncludeTree(parsedIncludes, options = {}) {
             title: "Open file",
             arguments: [treeView.lastEntry?.resourceUri, entry.local]
           };
-          node = {
-            ...entry,
-            children: [],
-            parent: treeView.lastEntry,
-            ...node
-          };
+          node = Object.assign(node, { ...entry, children: [], parent: treeView.lastEntry });
           // indicate that lastEntry is collapsible
           treeView.lastEntry.collapsibleState = vscode.TreeItemCollapsibleState.Collapsed;
           treeView.lastEntry.children.push(node);
@@ -291,7 +289,7 @@ function createIncludeTree(parsedIncludes, options = {}) {
           // this is a node on the same level as the parent node
           const parentEntry = treeView.lastEntry.parent;
           const Uri = vscode.Uri.file(entry.filename);
-          let node = new vscode.TreeItem(Uri, vscode.TreeItemCollapsibleState.None);
+          let node: IncludeTreeEntry = new vscode.TreeItem(Uri, vscode.TreeItemCollapsibleState.None) as IncludeTreeEntry;
           node.description = entry.type;
           // use file icon as default
           node.iconPath = new vscode.ThemeIcon("file");
@@ -301,12 +299,7 @@ function createIncludeTree(parsedIncludes, options = {}) {
             title: "Open file",
             arguments: [parentEntry?.resourceUri, entry.local]
           };
-          node = {
-            ...entry,
-            children: [],
-            parent: parentEntry,
-            ...node
-          };
+          node = Object.assign(node, { ...entry, children: [], parent: parentEntry });
           parentEntry.collapsibleState = vscode.TreeItemCollapsibleState.Collapsed;
           parentEntry.children.push(node);
           treeView.lastEntry = node;
@@ -314,11 +307,11 @@ function createIncludeTree(parsedIncludes, options = {}) {
           // this is a new node higher up in the tree view
           let parentEntry = treeView.lastEntry.parent;
           while (parentEntry.parentIndex >= entry.parentIndex) {
-            if (!parentEntry.parent) break;
+            if (!parentEntry.parent) { break; }
             parentEntry = parentEntry.parent;
           }
           const Uri = vscode.Uri.file(entry.filename);
-          let node = new vscode.TreeItem(Uri, vscode.TreeItemCollapsibleState.None);
+          let node: IncludeTreeEntry = new vscode.TreeItem(Uri, vscode.TreeItemCollapsibleState.None) as IncludeTreeEntry;
           node.description = entry.type;
           // use file icon as default
           node.iconPath = new vscode.ThemeIcon("file");
@@ -328,12 +321,7 @@ function createIncludeTree(parsedIncludes, options = {}) {
             title: "Open file",
             arguments: [parentEntry?.resourceUri, entry.local]
           };
-          node = {
-            ...entry,
-            children: [],
-            parent: parentEntry,
-            ...node
-          };
+          node = Object.assign(node, { ...entry, children: [], parent: parentEntry });
           parentEntry.collapsibleState = vscode.TreeItemCollapsibleState.Collapsed;
           parentEntry.children.push(node);
           treeView.lastEntry = node;
@@ -344,13 +332,7 @@ function createIncludeTree(parsedIncludes, options = {}) {
       }
       return treeView;
     },
-    {}
+    initial
   );
+  return result as IncludeTreeEntry;
 }
-
-export {
-  createGAMSIncludeTreeProvider,
-  parseIncludeFileSummary,
-  createIncludeTree,
-  gamsIncludeExplorer
-};

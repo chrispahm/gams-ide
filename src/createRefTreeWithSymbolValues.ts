@@ -1,30 +1,39 @@
-const vscode = require('vscode');
-const readline = require('readline');
-const fs = require('fs');
-const shell = require('shelljs');
-const path = require('path');
+import * as vscode from 'vscode';
+import * as readline from 'readline';
+import * as fs from 'fs';
+import * as path from 'path';
+import * as shell from 'shelljs';
+import State from './State';
+import { ReferenceTree, SolveStatement, SymbolDataStore } from './types/gams-symbols';
 
-export default async function createRefTreeWithSymbolValues(options) {
-  const {
-    file,
-    filePath,
-    scratchdir,
-    gamsexe,
-    dataProgress,
-    cancellationToken,
-    state
-  } = options;
+interface CreateRefTreeWithSymbolValuesArgs {
+  file: string; // path to .dmp dump file produced by GAMS (dumpopt=11)
+  filePath: string; // original gms file directory (workdir)
+  scratchdir: string; // scratch directory passed to GAMS (-scrdir)
+  gamsexe: string; // path to gams executable
+  dataProgress: vscode.Progress<{ message?: string; increment?: number }>;
+  cancellationToken: vscode.CancellationToken;
+  state: State;
+}
+
+interface ParseDmpResult {
+  dumpFile: fs.WriteStream; // temporary .gms file created from .dmp
+  solves: SolveStatement[];
+}
+
+export default async function createRefTreeWithSymbolValues(options: CreateRefTreeWithSymbolValuesArgs): Promise<void> {
+  const { file, filePath, scratchdir, gamsexe, dataProgress, cancellationToken, state } = options;
   
-  const referenceTree = state.get("referenceTree");
+  const referenceTree = state.get<ReferenceTree>('referenceTree');
   // reset gamsSolve state
   // state.update("solves", [{
   //   model: "Compile time",
   //   line: 0
   // }]);
-  state.update("solves", []);
-  state.update("dataStore", {});
-  const solvesStore = state.get("solves");
-  const dataInStore = state.get("dataStore");
+  state.update<SolveStatement[]>("solves", []);
+  state.update<SymbolDataStore>('dataStore', {});
+  const solvesStore = state.get<SolveStatement[]>("solves")!;
+  const dataInStore = state.get<SymbolDataStore>('dataStore') || {};
   dataProgress.report({ message: "Creating DMP File" });
   const {
     dumpFile,
@@ -39,9 +48,9 @@ export default async function createRefTreeWithSymbolValues(options) {
     return;
   }
   dataProgress.report({ message: "Parsing DMP" });
-  let dataStore;
+  let dataStore: SymbolDataStore | undefined;
   try {
-    dataStore = await getData(lst, solves, solvesStore, referenceTree, dataInStore);
+    dataStore = await getData(lst, solves, solvesStore, referenceTree || [], dataInStore);
   } catch (error) {
     throw error;
   }
@@ -50,32 +59,31 @@ export default async function createRefTreeWithSymbolValues(options) {
   state.update("dataStore", dataStore);
 };
 
-function parseDMP(file, config, referenceTree) {
-  return new Promise((resolve, reject) => {
+function parseDMP(file: string, config: { scratchdir: string; gamsexe: string }, referenceTree: ReferenceTree | undefined): Promise<ParseDmpResult> {
+  return new Promise<ParseDmpResult>((resolve, reject) => {
     const stream = fs.createReadStream(file);
-    const rl = readline.createInterface({
-      input: stream,
-      crlfDelay: Infinity
-    });
+    const rl = readline.createInterface({ input: stream, crlfDelay: Infinity });
 
     let lineno = 0;
-    const defaultSettings = vscode.workspace.getConfiguration("gamsIde");
-    const consoleDispWidth = defaultSettings.get('consoleDispWidth');
-    const resLim = defaultSettings.get('parseGamsDataResLim');
+    const defaultSettings = vscode.workspace.getConfiguration('gamsIde');
+    const consoleDispWidth = defaultSettings.get<number>('consoleDispWidth');
+    const resLim = defaultSettings.get<number>('parseGamsDataResLim');
     const dumpFile = fs.createWriteStream(`${config.scratchdir}${path.sep}${path.basename(file, '.dmp')}.gms`, { flags: 'w' });
-    
-    const symbols = referenceTree?.filter(o => { return o.type === 'SET' || o.type === 'PARAM' && o.name; });
-    const solves = [];
 
-    rl.on('line', (line) => {
+    const symbols = referenceTree?.filter(o => (o.type === 'SET' || o.type === 'PARAM') && o.name);
+    const solves: SolveStatement[] = [];
+
+    rl.on('line', (line: string) => {
       if (/solve (.*?) using/i.test(line)) {
         const model = line.split(/solve/i)[1].split(/\s+/)[1];
-        dumpFile.write('option dispWidth='+ consoleDispWidth +';\ndisplay\n');
+        dumpFile.write('option dispWidth=' + consoleDispWidth + ';\ndisplay\n');
         lineno += 2;
         const display = lineno + 1;
-        symbols.forEach((symbol) => {
-          dumpFile.write(`$if defined ${symbol.name} ${symbol.name} \n`);
-          lineno++;
+        symbols?.forEach(symbol => {
+          if (symbol.name) {
+            dumpFile.write(`$if defined ${symbol.name} ${symbol.name} \n`);
+            lineno++;
+          }
         });
 
         dumpFile.write(';\n');
@@ -89,12 +97,7 @@ function parseDMP(file, config, referenceTree) {
         dumpFile.write(line + '\n');
         lineno += 8;
 
-        solves.push({
-          model: model,
-          line: lineno,
-          display: display
-        });
-
+        solves.push({ model, line: lineno, display });
       } else if (!/display.*?;/gi.test(line)) {
         lineno++;
         dumpFile.write(line + '\n');
@@ -103,13 +106,12 @@ function parseDMP(file, config, referenceTree) {
 
     rl.on('close', () => {
       dumpFile.end();
-      fs.unlink(file, (err) => {
-        if (err) throw err;
+      fs.unlink(file, err => {
+        if (err) {
+          throw err;
+        }
       });
-      resolve({
-        dumpFile,
-        solves
-      });
+      resolve({ dumpFile, solves });
     });
 
     rl.on('error', err => {
@@ -119,80 +121,74 @@ function parseDMP(file, config, referenceTree) {
   });
 }
 
-function execDMP(dumpFile, config) {
-  return new Promise((resolve) => {
-    const listingPath = `${dumpFile.path}.lst`;
-    const defaultSettings = vscode.workspace.getConfiguration("gamsIde");
-    const resLim = defaultSettings.get('parseGamsDataResLim');    
-    const gamsParams = `"${config.gamsexe}" "${dumpFile.path}" -workdir="${config.filePath}" -curDir="${config.filePath}" o="${listingPath}" suppress=1 pageWidth=80 pageSize=0 lo=3 resLim=${resLim} -scrdir="${config.scratchdir}"`;
-    
+function execDMP(
+  dumpFile: fs.WriteStream,
+  config: { scratchdir: string; gamsexe: string; filePath: string; cancellationToken: vscode.CancellationToken }
+): Promise<string> {
+  return new Promise(resolve => {
+    const listingPath = `${(dumpFile as any).path}.lst`;
+    const defaultSettings = vscode.workspace.getConfiguration('gamsIde');
+    const resLim = defaultSettings.get<number>('parseGamsDataResLim');
+    const gamsParams = `"${config.gamsexe}" "${(dumpFile as any).path}" -workdir="${config.filePath}" -curDir="${config.filePath}" o="${listingPath}" suppress=1 pageWidth=80 pageSize=0 lo=3 resLim=${resLim} -scrdir="${config.scratchdir}"`;
+
     if (config.cancellationToken.isCancellationRequested) {
-      resolve("");
+      resolve('');
       return;
     }
-
+    // @ts-ignore
     shell.cd(config.scratchdir);
-    
-    const process = shell.exec(gamsParams, {silent: true}, (code, stdout, stderr) => {
+    // @ts-ignore
+    const child = shell.exec(gamsParams, { silent: true }, (code: number, stdout: string, stderr: string) => {
       if (code !== 0) {
         console.log('Error in dmp exec: ' + stdout, stderr);
-        // reject(stderr)
       }
-      // fs.unlink(dumpFile.path, (err) => {
-      //   if (err) throw err;
-      // });      
       resolve(listingPath);
     });
-
-    config.cancellationToken.onCancellationRequested(() => {
-      process.kill();
-    });
-
+    config.cancellationToken.onCancellationRequested(() => { child.kill(); });
   });
 }
 
-function getData(lst, solves, gamsSolves, referenceTree, dataStore) {
-  const timestamp = new Date().getTime();
-  return new Promise((resolve, reject) => {
+function getData(
+  lst: string,
+  solves: SolveStatement[],
+  gamsSolves: SolveStatement[],
+  referenceTree: ReferenceTree,
+  dataStore: SymbolDataStore
+): Promise<SymbolDataStore> {
+  const timestamp = Date.now();
+  return new Promise<SymbolDataStore>((resolve, reject) => {
     const stream = fs.createReadStream(lst);
-    const rl = readline.createInterface({
-      input: stream,
-      crlfDelay: Infinity
-    });
-    let curSym, curData, curSection, curSolve, foundError;
+    const rl = readline.createInterface({ input: stream, crlfDelay: Infinity });
+    let curSym: string | undefined;
+    let curData = '';
+    let curSection: 'Compilation' | 'Displays' | 'Equations' | 'Variables' | undefined;
+    let curSolve: string | number | undefined;
+    let foundError = false;
 
-    function save(solve, symbol, data) {
-      // save solve
-      const curSolve = solves.find(s => s.line === Number(solve));
-      if (curSolve) {
-        const statement = {
-          timestamp,
-          model: curSolve.model,
-          line: Number(solve)
-        };
+    function save(solve: string | number | undefined, symbol: string | undefined, data: string) {
+      if (!symbol || !solve) {
+        return;
+      }
+      const curSolveObj = solves.find(s => s.line === Number(solve));
+      if (curSolveObj) {
+        const statement: SolveStatement = { timestamp, model: curSolveObj.model, line: Number(solve) };
         if (!gamsSolves.find(s => s.line === Number(solve))) {
           gamsSolves.push(statement);
         }
       }
-      // save entry, overwrite any previous entries
-      const entry = referenceTree.find(el => {
-        if (el.name && symbol) return el.name.toLowerCase() === symbol.toLowerCase();
-      });
-
-      if (entry) {
-        if (!dataStore[entry.name]) dataStore[entry.name] = [];
-        dataStore[entry.name].push({
-          solve: Number(solve),
-          data: data
-        });
-        curSym = '';
+      const entry = referenceTree.find(el => el.name && el.name.toLowerCase() === symbol.toLowerCase());
+      if (entry && entry.name) {
+        if (!dataStore[entry.name]) {
+          dataStore[entry.name] = [];
+        }
+        dataStore[entry.name].push({ solve: Number(solve), data });
+        curSym = undefined;
         curData = '';
       }
     }
 
-    rl.on('line', (line) => {
-      // Save current section of the listing file and the associated solve
-      if (line.includes('C o m p i l a t i o n'))  {
+    rl.on('line', (line: string) => {
+      if (line.includes('C o m p i l a t i o n')) {
         curSection = 'Compilation';
       } else if (line.includes('E x e c u t i o n')) {
         curSection = 'Displays';
@@ -202,19 +198,20 @@ function getData(lst, solves, gamsSolves, referenceTree, dataStore) {
       } else if (line.includes('Column Listing')) {
         curSection = 'Variables';
         curSolve = line.split(/[\s]+/)[8];
-      }
-      // save data according to sections
-      // Displays, Equations, Variables
-      else if (/^(----)\s*/.test(line)) {
-        if (curSym) save(curSolve, curSym, curData);
+      } else if (/^(----)\s*/.test(line)) {
+        if (curSym) {
+          save(curSolve, curSym, curData);
+        }
         if (curSection === 'Displays') {
           const dispLine = Number(line.split(/[\s]+/)[1]);
-          const symbol = line.split(/[\s]+/)[3];
+            const symbol = line.split(/[\s]+/)[3];
           const pieces = line.split(/[\s]+/);
           pieces.splice(0, 2);
           const data = pieces.join(' ');
           const solve = solves.find(s => s.display === dispLine);
-          if (!solve) return;
+          if (!solve) {
+            return;
+          }
           curSym = symbol;
           curSolve = solve.line;
           curData = `---- ${data}`;
@@ -223,11 +220,10 @@ function getData(lst, solves, gamsSolves, referenceTree, dataStore) {
           curSym = symbol;
           curData = `${line}\n`;
         }
-      }
-      // sometimes set and parameters are displayed right below each other,
-      // therefore the above if statement won't catch these statements
-      else if (line.includes('PARAMETER') || line.includes('SET')) {
-        if (curSym) save(curSolve, curSym, curData);
+      } else if (line.includes('PARAMETER') || line.includes('SET')) {
+        if (curSym) {
+          save(curSolve, curSym, curData);
+        }
         if (curSection === 'Displays') {
           const symbol = line.split(/[\s]+/)[2];
           const pieces = line.split(/[\s]+/);
@@ -236,17 +232,13 @@ function getData(lst, solves, gamsSolves, referenceTree, dataStore) {
           curSym = symbol;
           curData = `---- ${data}`;
         }
-      }
-      // abort if compilation errors
-      else if (curSection === 'Compilation' && line.includes('****')) {
+      } else if (curSection === 'Compilation' && line.includes('****')) {
         foundError = true;
-        reject("Compilation error in DMP .lst file");
+        reject('Compilation error in DMP .lst file');
       } else if (line.includes('Error Messages') || line.includes('**** USER ERROR(S) ENCOUNTERED')) {
         foundError = true;
-        reject("User error in DMP .lst file");
-      }
-      // anything else
-      else if (/^(\*\*\*\*)\s*\d/.test(line) || /^(GAMS)/.test(line) || line.includes("G e n e r a l") || /^(Range Statistics)/.test(line) || /^(RANGE STATISTICS)/.test(line) ) {
+        reject('User error in DMP .lst file');
+      } else if (/^(\*\*\*\*)\s*\d/.test(line) || /^(GAMS)/.test(line) || line.includes('G e n e r a l') || /^(Range Statistics)/.test(line) || /^(RANGE STATISTICS)/.test(line)) {
         save(curSolve, curSym, curData);
       } else {
         curData += line + '\n';
@@ -254,17 +246,16 @@ function getData(lst, solves, gamsSolves, referenceTree, dataStore) {
     });
 
     rl.on('close', () => {
-      if (foundError) return;
-      console.log('close and unlink', lst);
-      fs.unlink(lst, (err) => {
-        if (err) throw err;
+      if (foundError) {
+        return;
+      }
+      fs.unlink(lst, err => {
+        if (err) {
+          throw err;
+        }
       });
       resolve(dataStore);
     });
-
-    rl.on('error', err => {
-      console.log('error in getData', err);
-      reject(err);
-    });
+    rl.on('error', err => { reject(err); });
   });
 }

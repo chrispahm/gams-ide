@@ -1,12 +1,12 @@
-const checkIfExcluded = require('./checkIfExcluded');
-const path = require('path');
-const vscode = require('vscode');
+import * as path from 'path';
+import * as vscode from 'vscode';
+import checkIfExcluded from './checkIfExcluded';
 
-export default function updateStatusBar(gamsStatusBarItem) {
+export default function updateStatusBar(gamsStatusBarItem: vscode.StatusBarItem): void {
   const file = vscode.window.activeTextEditor?.document.fileName;
   const mainGmsFile = vscode.workspace.getConfiguration('gamsIde').get('mainGmsFile');
-  const excludedFiles = vscode.workspace.getConfiguration('gamsIde').get('excludeFromMainGmsFile');
-  const fileIsExcluded = checkIfExcluded(file, excludedFiles);
+  const excludedFiles = vscode.workspace.getConfiguration('gamsIde').get('excludeFromMainGmsFile') as string[] | undefined;
+  const fileIsExcluded = file ? checkIfExcluded(file, excludedFiles || []) : false;
   const languageId = vscode.window.activeTextEditor?.document.languageId;
   if (languageId !== 'gams') {
     gamsStatusBarItem.hide();
@@ -15,7 +15,7 @@ export default function updateStatusBar(gamsStatusBarItem) {
     // open workspace settings.json -> excludeFromMainGmsFile
     gamsStatusBarItem.command = 'workbench.action.openWorkspaceSettingsFile';
     gamsStatusBarItem.show();
-  } else if (mainGmsFile) {
+  } else if (typeof mainGmsFile === 'string' && mainGmsFile) {
     gamsStatusBarItem.text = `Main GMS: ${path.basename(mainGmsFile)}`;
     // open settings for mainGmsFile
     gamsStatusBarItem.command = 'gams.selectMainGmsFile';

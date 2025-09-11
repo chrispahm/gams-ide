@@ -1,10 +1,10 @@
-const vscode = require("vscode");
-const { resolve } = require("path");
-const fs = require("fs/promises");
+import * as vscode from 'vscode';
+import { resolve } from 'path';
+import * as fs from 'fs/promises';
 
-export default async function clearScrdir() {
+export default async function clearScrdir(): Promise<void> {
   const config = vscode.workspace.getConfiguration("gamsIde");
-  let scratchDirectory = config.get("scratchDirectory");
+  let scratchDirectory = config.get<string | undefined>("scratchDirectory");
   if (!scratchDirectory) {    
     scratchDirectory = resolve(__dirname + '/../scrdir');
     let scratchDirectoryExists = false;
@@ -16,10 +16,12 @@ export default async function clearScrdir() {
     }
     if (!scratchDirectoryExists) {
       try {
-        await fs.mkdir(scratchDirectory);
+        await fs.mkdir(scratchDirectory as string);
       } catch (error) {
         console.error("error in clearScrdir: ", error);
-        vscode.window.showErrorMessage("Error in clearScrdir: ", error.message);
+        if (error instanceof Error) {
+          vscode.window.showErrorMessage("Error in clearScrdir: " + error.message);
+        }
       }
     }
   }

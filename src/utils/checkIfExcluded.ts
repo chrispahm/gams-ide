@@ -1,34 +1,44 @@
-const path = require('path');
+import * as path from 'path';
 
-export default function checkIfExcluded(filePath = "", pathsToExclude = [], returnMatchedPath = false) {
+/**
+ * Check whether an absolute file path should be considered excluded based on a list of paths.
+ * @param filePath Absolute path of file to test.
+ * @param pathsToExclude Array of absolute or relative (workspace-root relative) file or folder paths.
+ * @param returnMatchedPath When true returns the matched exclude path string instead of a boolean.
+ */
+export default function checkIfExcluded(
+  filePath: string = "",
+  pathsToExclude: string[] = [],
+  returnMatchedPath: boolean = false
+): boolean | string | undefined {
   // filePath is an absolute file path (e.g. "/home/user/subdir/file.gms")
   // pathsToExclude is an array of strings, where each entry can be:
   // - a relative path to a file or folder (e.g. "subdir/file.gms", "subdir")
   // - an absolute path to a file or folder (e.g. "/home/user/subdir/file.gms", "/home/user/subdir")
 
   // check if the file is excluded
-  const excluded = pathsToExclude.some((pathToExclude) => {
-    // check if the pathToExclude is an absolute path
-    if (path.isAbsolute(pathToExclude)) {
-      // check if the file is excluded
-      if (filePath.startsWith(pathToExclude)) {
-        return returnMatchedPath ? pathToExclude : true;
-      }
-    } else {
-      // check if the a single file is referenced
-      if (pathToExclude.toLowerCase().endsWith(".gms") && filePath.endsWith(pathToExclude)) {
-        return returnMatchedPath ? pathToExclude : true;
-      } else if (path.parse(filePath).dir.endsWith(pathToExclude)) {
-        return returnMatchedPath ? pathToExclude : true;
-      }
-      // for folders, we have to check if any of the parent directories has the same name
-      const directoriesInFilePath = filePath.split(path.sep);
-      directoriesInFilePath.some((directory) => {
-        if (directory === pathToExclude) {
-          return returnMatchedPath ? pathToExclude : true;
-        }
-      });
+  for (const pathToExclude of pathsToExclude) {
+    if (!pathToExclude) {
+      continue;
     }
-  });
-  return excluded;
+    // absolute path match (folder or file)
+    if (path.isAbsolute(pathToExclude)) {
+      if (filePath === pathToExclude || filePath.startsWith(pathToExclude + path.sep)) {
+        return returnMatchedPath ? pathToExclude : true;
+      }
+      continue;
+    }
+    // single file relative path
+    if (pathToExclude.toLowerCase().endsWith('.gms')) {
+      if (filePath.toLowerCase().endsWith(path.sep + pathToExclude.toLowerCase())) {
+        return returnMatchedPath ? pathToExclude : true;
+      }
+    }
+    // folder relative path: check each segment
+    const segments = filePath.split(path.sep);
+    if (segments.includes(pathToExclude)) {
+      return returnMatchedPath ? pathToExclude : true;
+    }
+  }
+  return returnMatchedPath ? undefined : false;
 };

@@ -14,23 +14,30 @@ import implementLSPMethods from "./lsp/implementLSPMethods";
 import { gamsIncludeExplorer } from "./createIncludeTree";
 import registerIncludeTreeCommands from "./registerIncludeTreeCommands";
 import State from "./State.js";
+import { ReferenceSymbol } from "./types/gams-symbols";
 
-let terminal;
-let gamsView;
-let gamsDataView;
-let gamsStatusBarItem;
-let includeTreeProvider;
+let terminal: vscode.Terminal;
+let gamsView: vscode.WebviewView | undefined;
+let gamsDataView: vscode.WebviewView | undefined;
+let gamsStatusBarItem: vscode.StatusBarItem;
+let includeTreeProvider: vscode.Disposable | undefined;
 
-export async function activate(context) {
-	// first, we try to delete all contents of the scratch directory (scrdir) to avoid
-	// conflicts with previous runs
-	await clearScrdir();
+function createOrFindTerminal(): vscode.Terminal {
 	// check if a terminal with the name "GAMS" already exists
-	terminal = vscode.window.terminals.find((terminal) => terminal.name === "GAMS");
+	let terminal = vscode.window.terminals.find((terminal) => terminal.name === "GAMS");
 	// if not, create a terminal for compiling and executing GAMS files
 	if (!terminal) {
 		terminal = vscode.window.createTerminal("GAMS");
 	}
+	return terminal;
+}
+
+export async function activate(context: vscode.ExtensionContext): Promise<void> {
+	// first, we try to delete all contents of the scratch directory (scrdir) to avoid
+	// conflicts with previous runs
+	await clearScrdir();
+	// check if a terminal with the name "GAMS" already exists
+	terminal = createOrFindTerminal();
 
 	const state = new State();
 	// start listening to save events to generate diagnostics
@@ -40,7 +47,7 @@ export async function activate(context) {
 		const document = vscode.window.activeTextEditor.document;
 		// check if the active editor is a GAMS file
 		if (document.languageId === "gams") {
-			await updateDiagnostics({ document, collection, gamsDataView, state, terminal });
+			await updateDiagnostics({ document, collection, state, terminal });
 		}
 	}
 
@@ -53,13 +60,12 @@ export async function activate(context) {
 				// a) there is no main file set
 				// b) there is a main file, but this file is excluded from the main file
 				const mainGmsFile = vscode.workspace.getConfiguration("gamsIde").get("mainGmsFile");
-				const excludeFromMainGmsFile = vscode.workspace.getConfiguration().get("gamsIde.excludeFromMainGmsFile");
+				const excludeFromMainGmsFile = vscode.workspace.getConfiguration().get("gamsIde.excludeFromMainGmsFile") as string[] | undefined;
 				const file = editor.document.fileName;
 				if (!mainGmsFile || checkIfExcluded(file, excludeFromMainGmsFile)) {
 					await updateDiagnostics({
 						document: editor.document,
 						collection,
-						gamsDataView,
 						state,
 						terminal
 					});
@@ -98,14 +104,22 @@ export async function activate(context) {
 			// check if "runDiagnosticsOnSave" is enabled
 			const runDiagnosticsOnSave = vscode.workspace.getConfiguration("gamsIde").get("runDiagnosticsOnSave");
 			if (document && document.languageId === "gams" && runDiagnosticsOnSave) {
-				await updateDiagnostics({ document, collection, gamsDataView, state, terminal });
+				await updateDiagnostics({ document, collection, state, terminal });
 			}
 		})
 	);
 
 	// add the model include tree view if enabled
 	if (vscode.workspace.getConfiguration("gamsIde").get("enableModelIncludeTreeView")) {
-		includeTreeProvider = new gamsIncludeExplorer(context, state);
+		// Wrap include explorer so it satisfies vscode.Disposable
+		const explorerInstance = new gamsIncludeExplorer(context, state);
+		includeTreeProvider = {
+			dispose() {
+				if (typeof (explorerInstance as unknown as { dispose?: () => void }).dispose === 'function') {
+					(explorerInstance as unknown as { dispose: () => void }).dispose();
+				}
+			}
+		};
 	}
 	// add commands necessary for include tree view anyways
 	registerIncludeTreeCommands(context, state);
@@ -152,7 +166,7 @@ export async function activate(context) {
 		vscode.commands.registerCommand("gams.updateDiagnostics", async () => {
 			const editor = vscode.window.activeTextEditor;
 			if (editor && editor.document.languageId === "gams") {
-				await updateDiagnostics({ document: editor.document, collection, gamsDataView, state, terminal });
+				await updateDiagnostics({ document: editor.document, collection, state, terminal });
 			}
 		})
 	);
@@ -172,7 +186,7 @@ export async function activate(context) {
 				// re-run diagnostics so that the data view is updated
 				const editor = vscode.window.activeTextEditor;
 				if (editor && editor.document.languageId === "gams") {
-					await updateDiagnostics({ forceDataParsing: true, document: editor.document, collection, gamsDataView, state, terminal });
+					await updateDiagnostics({ forceDataParsing: true, document: editor.document, collection, state, terminal });
 				}
 			}
 		})
@@ -212,7 +226,8 @@ export async function activate(context) {
 	context.subscriptions.push(
 		vscode.commands.registerCommand("gams.addToExcludeFromMainGmsFile", () => {
 			const file = vscode.window.activeTextEditor?.document.fileName;
-			const excludeFromMainGmsFile = vscode.workspace.getConfiguration().get("gamsIde.excludeFromMainGmsFile");
+			if (!file) { return; }
+			const excludeFromMainGmsFile = vscode.workspace.getConfiguration().get<string[]>("gamsIde.excludeFromMainGmsFile") || [];
 			// check if the file is already excluded
 			if (checkIfExcluded(file, excludeFromMainGmsFile)) {
 				vscode.window.showInformationMessage("File is already excluded.");
@@ -228,16 +243,21 @@ export async function activate(context) {
 	context.subscriptions.push(
 		vscode.commands.registerCommand("gams.removeFromExcludeFromMainGmsFile", () => {
 			const file = vscode.window.activeTextEditor?.document.fileName;
-			const excludeFromMainGmsFile = vscode.workspace.getConfiguration().get("gamsIde.excludeFromMainGmsFile");
+			if (!file) { return; }
+			const excludeFromMainGmsFile = vscode.workspace.getConfiguration().get<string[]>("gamsIde.excludeFromMainGmsFile") || [];
 			const matchedExcludePath = checkIfExcluded(file, excludeFromMainGmsFile, true);
 			// check if the file is already excluded
 			if (!matchedExcludePath) {
 				vscode.window.showInformationMessage("File is not excluded.");
 				return;
 			} else {
-				const index = excludeFromMainGmsFile.indexOf(matchedExcludePath);
-				excludeFromMainGmsFile.splice(index, 1);
-				vscode.workspace.getConfiguration().update("gamsIde.excludeFromMainGmsFile", excludeFromMainGmsFile, vscode.ConfigurationTarget.Workspace);
+				if (typeof matchedExcludePath === 'string') {
+					const index = excludeFromMainGmsFile.indexOf(matchedExcludePath);
+					if (index >= 0) {
+						excludeFromMainGmsFile.splice(index, 1);
+						vscode.workspace.getConfiguration().update("gamsIde.excludeFromMainGmsFile", excludeFromMainGmsFile, vscode.ConfigurationTarget.Workspace);
+					}
+				}
 			}
 		})
 	);
@@ -290,8 +310,11 @@ export async function activate(context) {
 
 	// add the gams reference tree sidebar
 	vscode.window.registerWebviewViewProvider('gamsIdeView', {
-		// Implement the resolveWebviewView method
-		resolveWebviewView(webviewView, undefined) {
+		resolveWebviewView(
+			webviewView: vscode.WebviewView,
+			_context: vscode.WebviewViewResolveContext<unknown>,
+			_token: vscode.CancellationToken
+		) {
 			gamsView = webviewView;
 			// Set the webview options
 			webviewView.webview.options = {
@@ -312,8 +335,8 @@ export async function activate(context) {
 				async message => {
 					// get current cursor position
 					const editor = vscode.window.activeTextEditor;
-					const position = editor.selection?.active;
-					const file = editor.document?.fileName;
+					const position = editor?.selection?.active;
+					const file = editor?.document?.fileName;
 					const line = position?.line;
 					const column = position?.character;
 
@@ -336,28 +359,30 @@ export async function activate(context) {
 							});
 							break;
 						case 'updateSymbol':
-							const referenceTree = state.get("referenceTree");
-							let matchingRef;
+							const referenceTree = (state.get<ReferenceSymbol[]>("referenceTree") || []);
+							let matchingRef: ReferenceSymbol | undefined;
 							if (message.data.fuzzy) {
-								matchingRef = referenceTree?.find((item) => item.name?.toLowerCase().includes(message.data.symbol?.toLowerCase()));
+								const sym = message.data.symbol?.toLowerCase();
+								matchingRef = referenceTree.find((item: ReferenceSymbol) => item.name?.toLowerCase().includes(sym));
 							} else {
-								matchingRef = referenceTree?.find((item) => item.name?.toLowerCase() === message.data.symbol?.toLowerCase());
+								const sym = message.data.symbol?.toLowerCase();
+								matchingRef = referenceTree.find((item: ReferenceSymbol) => item.name?.toLowerCase() === sym);
 							}
 
 							if (matchingRef) {
 								const data = {
 									...matchingRef,
-									domain: matchingRef.domain?.map((domain) => ({ name: domain.name })),
-									subsets: matchingRef.subsets?.map((subset) => ({ name: subset.name })),
+										domain: matchingRef.domain?.map((domain: ReferenceSymbol) => ({ name: domain.name })),
+										subsets: matchingRef.subsets?.map((subset: ReferenceSymbol) => ({ name: subset.name })),
 									superset: {
 										name: matchingRef.superset?.name
 									},
-									historyCursorFile: file,
-									historyCursorLine: line + 1,
-									historyCursorColumn: column + 1
+										historyCursorFile: file,
+										historyCursorLine: (line ?? 0) + 1,
+										historyCursorColumn: (column ?? 0) + 1
 								};
 
-								gamsView.webview.postMessage({
+								gamsView?.webview.postMessage({
 									command: "updateReference",
 									data
 								});
@@ -370,37 +395,37 @@ export async function activate(context) {
 							terminal.sendText(String.fromCharCode(3));
 							break;
 						case 'getState':
-							const isListing = vscode.window.activeTextEditor && vscode.window.activeTextEditor.document.fileName.toLowerCase().endsWith('.lst');
+							const activeEditor = vscode.window.activeTextEditor;
+							const isListing = !!activeEditor && activeEditor.document.fileName.toLowerCase().endsWith('.lst');
 							if (isListing) {
-								await debouncedListenToLstFiles({
-									document: vscode.window.activeTextEditor.document,
+								if (activeEditor) {
+									await debouncedListenToLstFiles({
+										document: activeEditor.document,
 									contentChanges: [],
 									gamsView,
 									state
 								});
-								const lstTree = state.get("lstTree");
-								if (lstTree) {
-									webviewView.webview.postMessage({
-										command: "updateListing",
-										data: {
-											lstTree,
-											isListing
-										}
-									});
+									const lstTree = state.get("lstTree");
+									if (lstTree) {
+										webviewView.webview.postMessage({
+											command: "updateListing",
+											data: { lstTree, isListing }
+										});
+									}
 								}
 							} else {
-								getSymbolUnderCursor({
-									event: {
-										textEditor: vscode.window.activeTextEditor,
-										selections: vscode.window.activeTextEditor?.selections,
-									}, gamsDataView, state, gamsView
-								});
-								const curSymbol = state.get("curSymbol");
-
+								if (activeEditor) {
+									getSymbolUnderCursor({
+										event: {
+											textEditor: activeEditor,
+											selections: activeEditor.selections,
+										}, gamsDataView, state, gamsView
+									});
+								}
+								const curSymbol = state.get<ReferenceSymbol>("curSymbol");
 								if (curSymbol) {
-									curSymbol.domain = curSymbol.domain?.map((domain) => ({ name: domain.name }));
-									curSymbol.subsets = curSymbol.subsets?.map((subset) => ({ name: subset.name }));
-
+									curSymbol.domain = curSymbol.domain?.map((domain: ReferenceSymbol) => ({ name: domain.name }));
+									curSymbol.subsets = curSymbol.subsets?.map((subset: ReferenceSymbol) => ({ name: subset.name }));
 									webviewView.webview.postMessage({
 										command: "updateReference",
 										data: curSymbol
@@ -416,19 +441,22 @@ export async function activate(context) {
 
 		}
 	});
-	context.subscriptions.push(gamsView);
+	// no need to push gamsView directly; it is managed by VSCode lifecycle
 	// add a command to open the gams reference tree sidebar
 	context.subscriptions.push(
 		vscode.commands.registerCommand("gams.openSidebar", () => {
-			gamsView.show();
+			gamsView?.show();
 		})
 	);
 
 	// gams data view
-	function createGamsDataView() {
+	function createGamsDataView(): vscode.WebviewViewProvider {
 		return {
-			// Implement the resolveWebviewView method
-			resolveWebviewView(webviewView) {
+			resolveWebviewView(
+				webviewView: vscode.WebviewView,
+				_context: vscode.WebviewViewResolveContext<unknown>,
+				_token: vscode.CancellationToken
+			) {
 				gamsDataView = webviewView;
 				state.update("gamsDataView", gamsDataView);
 				// Set the webview options
@@ -447,7 +475,7 @@ export async function activate(context) {
 				webviewView.webview.html = getGamsIdeDataViewContainerContent({
 					webviewToolkitUri,
 					codiconsUri,
-					isDataParsingEnabled: vscode.workspace.getConfiguration("gamsIde").get("parseGamsData")
+					isDataParsingEnabled: !!vscode.workspace.getConfiguration("gamsIde").get("parseGamsData")
 				});
 
 				webviewView.webview.onDidReceiveMessage(async message => {
@@ -485,7 +513,7 @@ export async function activate(context) {
 	context.subscriptions.push(showDataViewCommandDisposable);
 
 	// listen to changes to the parseGamsData setting
-	vscode.workspace.onDidChangeConfiguration((e) => {
+	const configChangeDisposable = vscode.workspace.onDidChangeConfiguration((e) => {
 		if (e.affectsConfiguration("gamsIde.parseGamsData")) {
 			// send a message to the data view to update the content
 			const isDataParsingEnabled = vscode.workspace.getConfiguration("gamsIde").get("parseGamsData");
@@ -500,7 +528,7 @@ export async function activate(context) {
 				// re-run diagnostics so that the data view is updated
 				const editor = vscode.window.activeTextEditor;
 				if (editor && editor.document.languageId === "gams") {
-					updateDiagnostics({ document: editor.document, collection, gamsDataView, state, terminal });
+					updateDiagnostics({ document: editor.document, collection, state, terminal });
 				}
 			}
 		} else if (e.affectsConfiguration("gamsIde.mainGmsFile") || e.affectsConfiguration("gamsIde.excludeFromMainGmsFile")) {
@@ -508,16 +536,25 @@ export async function activate(context) {
 			// re-run diagnostics
 			const editor = vscode.window.activeTextEditor;
 			if (editor && editor.document.languageId === "gams") {
-				updateDiagnostics({ document: editor.document, collection, gamsDataView, state, terminal });
+				updateDiagnostics({ document: editor.document, collection, state, terminal });
 			}
 		} else if (e.affectsConfiguration("gamsIde.enableModelIncludeTreeView")) {
 			if (vscode.workspace.getConfiguration("gamsIde").get("enableModelIncludeTreeView")) {
-				includeTreeProvider = new gamsIncludeExplorer(context, state);
+				const explorerInstance = new gamsIncludeExplorer(context, state);
+				includeTreeProvider = {
+					dispose() {
+						if (typeof (explorerInstance as unknown as { dispose?: () => void }).dispose === 'function') {
+							(explorerInstance as unknown as { dispose: () => void }).dispose();
+						}
+					}
+				};
 			} else {
-				includeTreeProvider.dispose();
+				includeTreeProvider?.dispose();
+				includeTreeProvider = undefined;
 			}
 		}
 	});
+	context.subscriptions.push(configChangeDisposable);
 }
 
 // this method is called when your extension is deactivated

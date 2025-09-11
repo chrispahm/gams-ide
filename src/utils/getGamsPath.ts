@@ -1,11 +1,11 @@
-const vscode = require("vscode");
-const { which } = require('shelljs');
-const { glob, globSync } = require('glob');
-const os = require('os');
+import * as vscode from 'vscode';
+import { which } from 'shelljs';
+import { glob, globSync } from 'glob';
+import * as os from 'os';
 
-export default async function getGamsPath() {
+export default async function getGamsPath(): Promise<string | undefined> {
   const defaultSettings = vscode.workspace.getConfiguration("gamsIde");
-  let gamsExecutable = defaultSettings.get("gamsExecutable");
+  let gamsExecutable = defaultSettings.get<string | undefined>("gamsExecutable");
   
   // if there is no gamsExecutable, try to find it in the PATH
   if (!gamsExecutable) {
@@ -16,7 +16,7 @@ export default async function getGamsPath() {
       vscode.workspace.getConfiguration().update("gamsIde.gamsExecutable", gamsExecutable, vscode.ConfigurationTarget.Workspace);
       // show info message, with button to open settings
       const openSettings = 'Open Settings';
-      vscode.window.showInformationMessage(`Found GAMS executable at ${gamsExecutable}, now stored in workspace settings.`, openSettings).then(selection => {
+      vscode.window.showInformationMessage(`Found GAMS executable at ${gamsExecutable}, now stored in workspace settings.`, openSettings).then((selection: string | undefined) => {
         if (selection === openSettings) {
           vscode.commands.executeCommand('workbench.action.openSettings', 'gamsIde.gamsExecutable');
         }
@@ -52,14 +52,10 @@ export default async function getGamsPath() {
       ];
       const working = paths.find(curPath => {
         const present = globSync(curPath);
-        if (present && present.length > 0) return present;
+        return present && present.length > 0 ? present : undefined;
       });
-      if (working.length > 0) {
-        if (Array.isArray(working)) {
-          gamsExecutable = working[working.length - 1];
-        } else {
-          gamsExecutable = working;
-        }
+      if (working && (Array.isArray(working) ? working.length > 0 : true)) {
+        gamsExecutable = Array.isArray(working) ? working[working.length - 1] : working as string;
       }
     } else if (os.platform() === 'linux') {
       gamsExecutable = '/opt/gams/gams24.8_linux_x64_64_sfx';
@@ -68,7 +64,7 @@ export default async function getGamsPath() {
       vscode.workspace.getConfiguration().update("gamsIde.gamsExecutable", gamsExecutable, vscode.ConfigurationTarget.Workspace);
       // show info message, with button to open settings
       const openSettings = 'Open Settings';
-      vscode.window.showInformationMessage(`Found GAMS executable at ${gamsExecutable}, now stored in workspace settings.`, openSettings).then(selection => {
+      vscode.window.showInformationMessage(`Found GAMS executable at ${gamsExecutable}, now stored in workspace settings.`, openSettings).then((selection: string | undefined) => {
         if (selection === openSettings) {
           vscode.commands.executeCommand('workbench.action.openSettings', 'gamsIde.gamsExecutable');
         }
@@ -80,7 +76,7 @@ export default async function getGamsPath() {
   if (!gamsExecutable) {
     // show error message and button with link to settings
     const openSettings = 'Open Settings';
-    vscode.window.showErrorMessage(`GAMS executable not found. Please update the workspace settings.`, openSettings).then(selection => {
+    vscode.window.showErrorMessage(`GAMS executable not found. Please update the workspace settings.`, openSettings).then((selection: string | undefined) => {
       if (selection === openSettings) {
         vscode.commands.executeCommand('workbench.action.openSettings', 'gamsIde.gamsExecutable');
       }

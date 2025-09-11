@@ -1,5 +1,5 @@
-const peggy = require("peggy");
-const fs = require("fs");
+import peggy from "peggy";
+import fs from "fs";
 
 const grammar = fs.readFileSync("./gamsGrammar.pegjs", "utf8");
 
