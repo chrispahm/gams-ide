@@ -25,7 +25,13 @@ export default function provideGAMSSignatureHelp(
         const gIndex = (gamsSymbol as any).index as number;
         const label = functionRef.name + "(" + functionRef.domain.map(d => d.name).join(", ") + ")";
         const signatureInformation = new vscode.SignatureInformation(label, functionRef.description);
-        signatureInformation.parameters = functionRef.domain.map(d => ({ label: d.name, documentation: d.description }));
+        signatureInformation.parameters = functionRef.domain
+          .filter(d => d.name)
+          .map(d => ({ 
+            label: d.name as string, 
+            documentation: d.description 
+          })
+        );
         signatureInformation.activeParameter = gIndex;
         signatureHelp.signatures = [signatureInformation];
         return signatureHelp;

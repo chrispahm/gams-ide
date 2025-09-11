@@ -56,7 +56,7 @@ export default async function getSymbolUnderCursor(args: GetSymbolArgs): Promise
 
   let quotedElement = '';
   let functionName = '';
-  let domain: string[] = [];
+  let domain: (string | undefined)[] = [];
   let domainIndex = 0;
 
     // first, we try to find the reference in the reference tree without checking the AST
@@ -92,7 +92,7 @@ export default async function getSymbolUnderCursor(args: GetSymbolArgs): Promise
       ));
 
       if (gamsSymbol) {
-  const functionRef = referenceTree?.find((item) => item.nameLo === gamsSymbol?.functionName?.toLowerCase());
+        const functionRef = referenceTree?.find((item) => item.nameLo === gamsSymbol?.functionName?.toLowerCase());
         if (gamsSymbol.isQuoted) {
           quotedElement = gamsSymbol.name;
         }

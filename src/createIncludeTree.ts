@@ -162,7 +162,7 @@ export function parseIncludeFileSummary(lstFile: string, state: State): Promise<
       } else if (line.startsWith("---- Begin of Compile-time Variable List")) {
         inCompileTimeVariableList = true;
       } else if (inIncludeFileSummary && line.match(/^\s/)) {
-  const tokens = line.split(/\s+/);
+        const tokens = line.split(/\s+/);
         // If the line has six tokens, then it is a valid entry
         if (tokens.length === 7) {
           // since we use the compile.gms file as the root, we need to remove it from the include file summary

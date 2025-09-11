@@ -3,8 +3,8 @@ import gamsParser from "../utils/gamsParser.js";
 import { ReferenceSymbol, CompileTimeVariable, GamsLineAst } from "../types/gams-symbols";
 import State from "../State";
 
-function getCompletionStringsSubsets(symbol: ReferenceSymbol): string[] {
-  const completionStrings: string[] = [symbol.name];
+function getCompletionStringsSubsets(symbol: ReferenceSymbol): (string | undefined)[] {
+  const completionStrings: (string | undefined)[] = [symbol.name];
   if (symbol.subsets) {
     for (const subset of symbol.subsets) {
       completionStrings.push(subset.name);
@@ -79,6 +79,9 @@ function createCompletionsForSymbols(symbols: ReferenceSymbol[], options: Comple
   return symbols
     .filter(symbol => symbol.name?.toLowerCase()?.startsWith(lcPrefix))
     .reduce<vscode.CompletionItem[]>((completionItems, symbol) => {
+      if (!symbol.name) {
+        return completionItems;
+      }
       const completionItem = new vscode.CompletionItem(symbol.name);
       completionItem.kind = symbolToCompletionItemKind(symbol);
       if (symbol.description) {

@@ -14,7 +14,7 @@ export interface SymbolActionLocation extends SymbolLocation {}
 export type SymbolActionList = SymbolActionLocation[];
 
 export interface ReferenceSymbol {
-  name: string;
+  name?: string;
   nameLo?: string; // lowercase variant used for insensitive compare
   symId?: string;
   type?: string; // e.g. SET, PARAM, VAR, EQU, MODEL, SCALAR

@@ -3,6 +3,9 @@ import State from '../State';
 import { ReferenceTree, ReferenceSymbol, SymbolActionLocation } from '../types/gams-symbols';
 
 function createDocumentSymbol(symbol: ReferenceSymbol, detail: string): vscode.DocumentSymbol {
+  if (!symbol.name) {
+    throw new Error('Symbol must have a name');
+  }
   let symbolKind = vscode.SymbolKind.Variable;
   switch (symbol.type) {
     case 'SET':

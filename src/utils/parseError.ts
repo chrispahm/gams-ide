@@ -1,6 +1,7 @@
 import * as vscode from 'vscode';
 import { normalize } from 'path';
 import * as util from 'node:util';
+// @ts-ignore
 import rl from 'readline-specific';
 import errCodes from './gamsErrCodes.js';
 const oneline = util.promisify(rl.oneline);
@@ -52,7 +53,7 @@ export default async function parseError(error: string, index: number): Promise<
   const message: ParsedErrorMessage = {
     code: ruleId,
     errFile,
-    message: errCodes[ruleId],
+    message: errCodes[ruleId.toString() as keyof typeof errCodes] || 'Unknown error code ' + ruleId,
     range: new vscode.Range(
       new vscode.Position(line, left),
       new vscode.Position(line, right)

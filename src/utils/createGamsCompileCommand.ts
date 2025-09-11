@@ -12,7 +12,7 @@ interface CompileGamsCommandResult {
   errorPath: string;
   refPath: string;
   dumpPath: string;
-  scratchDirectory: string | undefined;
+  scratchDirectory: string;
   gamsFile: string;
   filePath: string;
 }
@@ -36,11 +36,11 @@ export default async function createGamsCommand(docFileName: string, extraArgs: 
     scratchDirectory = resolve(__dirname + '/../scrdir');
     // check if the scratch directory exists, if not, create it
     try {
-  await fs.access(scratchDirectory, fs.constants.R_OK | fs.constants.W_OK);
+      await fs.access(scratchDirectory, fs.constants.R_OK | fs.constants.W_OK);
     } catch (e) {
       // no access to scratch directory, try to create it
       try {
-  await fs.mkdir(scratchDirectory as string);
+        await fs.mkdir(scratchDirectory as string);
       } catch (error) {
         if (error instanceof Error) {
           vscode.window.showErrorMessage("Error accessing scrdir: " + error.message);
@@ -51,7 +51,7 @@ export default async function createGamsCommand(docFileName: string, extraArgs: 
 
   let ignoreMainGmsFile = false;
   if (mainGmsFile) {
-    ignoreMainGmsFile = checkIfExcluded(docFileName, defaultSettings.get("excludeFromMainGmsFile"));
+    ignoreMainGmsFile = checkIfExcluded(docFileName, defaultSettings.get("excludeFromMainGmsFile")) ? true : false;
   }
   // if a main GMS file is specified, we try to find the file in the workspace  
   if (mainGmsFile && vscode.workspace.workspaceFolders && vscode.workspace.workspaceFolders.length && !ignoreMainGmsFile) {
@@ -80,7 +80,7 @@ export default async function createGamsCommand(docFileName: string, extraArgs: 
     }
     // check if the file exists, if not show buttons to either select main gams file or disable
     try {
-  await fs.access(mainGmsFile as string, fs.constants.R_OK);
+      await fs.access(mainGmsFile as string, fs.constants.R_OK);
     } catch (e) {
       // Show error message and button with link to settings
       const selectMainGMS = 'Select main GMS file';
@@ -102,19 +102,19 @@ export default async function createGamsCommand(docFileName: string, extraArgs: 
     const gamsFile = parse(mainGmsFilePath).base;
     
     if (gamsFile === 'exp_starter.gms') {
-  commandLineArguments = (commandLineArguments as string[]).concat(
+      commandLineArguments = (commandLineArguments as string[]).concat(
         [`--scen=incgen${sep}runInc`]
       );
     } else if (gamsFile === 'capmod.gms') {
-  commandLineArguments = (commandLineArguments as string[]).concat(
+      commandLineArguments = (commandLineArguments as string[]).concat(
         [`-scrdir="${scratchDirectory}"`, '--scen=fortran']
       );
     } else if (gamsFile === 'capreg.gms') {
-  commandLineArguments = (commandLineArguments as string[]).concat(
+      commandLineArguments = (commandLineArguments as string[]).concat(
         [`-scrdir="${scratchDirectory}"`, '--scen=forreg', '--ggig=on']
       );
     } else if (gamsFile === 'com_.gms') {
-  commandLineArguments = (commandLineArguments as string[]).concat(
+      commandLineArguments = (commandLineArguments as string[]).concat(
         [`-procdirpath="${scratchDirectory}"`, '--scen=com_inc']
       );
     }
