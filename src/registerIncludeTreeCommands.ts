@@ -1,4 +1,5 @@
-const vscode = require('vscode');
+import * as vscode from 'vscode';
+import State from './State';
 const includeTypes = [
   "EXIT",
   "INCLUDE",
@@ -17,7 +18,9 @@ const includeTypes = [
   "STOP"
 ];
 
-export default function registerIncludeTreeCommands(context, state) {
+interface HideFileNode { resourceUri: vscode.Uri; }
+
+export default function registerIncludeTreeCommands(context: vscode.ExtensionContext, state: State) {
   includeTypes.forEach(type => {
     context.subscriptions.push(
       vscode.commands.registerCommand(`gams.modelTree.hide${type}`, () => {
@@ -36,14 +39,11 @@ export default function registerIncludeTreeCommands(context, state) {
   });
 
   context.subscriptions.push(
-    vscode.commands.registerCommand(`gams.modelTree.hideFile`, (node) => {
+    vscode.commands.registerCommand(`gams.modelTree.hideFile`, (node: HideFileNode) => {
       console.log("shouldhide", node.resourceUri);
-      let ignoreFiles = state.get("ignoreFilesIncludeTree");
-      if (!ignoreFiles) {
-        ignoreFiles = [];
-      }
-      ignoreFiles.push(node.resourceUri.fsPath);
-      state.update("ignoreFilesIncludeTree", ignoreFiles);
+      const existing = state.get<string[]>("ignoreFilesIncludeTree") || [];
+      existing.push(node.resourceUri.fsPath);
+      state.update("ignoreFilesIncludeTree", existing);
       vscode.commands.executeCommand('gams.refreshIncludeTree');
     })
   );

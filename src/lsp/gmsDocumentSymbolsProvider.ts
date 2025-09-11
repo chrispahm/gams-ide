@@ -1,59 +1,50 @@
-const vscode = require("vscode");
+import * as vscode from 'vscode';
+import State from '../State';
+import { ReferenceTree, ReferenceSymbol, SymbolActionLocation } from '../types/gams-symbols';
 
-function createDocumentSymbol(symbol, detail) {
+function createDocumentSymbol(symbol: ReferenceSymbol, detail: string): vscode.DocumentSymbol {
   let symbolKind = vscode.SymbolKind.Variable;
-  if (symbol.type === "SET") {
-    symbolKind = vscode.SymbolKind.Array;
-  } else if (symbol.type === "EQU") {
-    symbolKind = vscode.SymbolKind.Function;
-  } else if (symbol.type === "PARAM") {
-    symbolKind = vscode.SymbolKind.Constant;
-  } else if (symbol.type === "MODEL") {
-    symbolKind = vscode.SymbolKind.Class;
+  switch (symbol.type) {
+    case 'SET':
+      symbolKind = vscode.SymbolKind.Array; break;
+    case 'EQU':
+      symbolKind = vscode.SymbolKind.Function; break;
+    case 'PARAM':
+      symbolKind = vscode.SymbolKind.Constant; break;
+    case 'MODEL':
+      symbolKind = vscode.SymbolKind.Class; break;
   }
-  const symbolRange = new vscode.Range(
-    new vscode.Position(symbol.line-1, symbol.column-1),
-    new vscode.Position(symbol.line-1, symbol.column)
-  );
-  return new vscode.DocumentSymbol(
-    symbol.name,
-    detail,
-    symbolKind,
-    symbolRange,
-    symbolRange
-  );
+  const line = (symbol.line as number) || symbol.declared?.line || symbol.defined?.line || 1;
+  const column = (symbol.column as number) || symbol.declared?.column || symbol.defined?.column || 1;
+  const symbolRange = new vscode.Range(new vscode.Position(line - 1, Math.max(0, column - 1)), new vscode.Position(line - 1, Math.max(0, column)));
+  return new vscode.DocumentSymbol(symbol.name, detail, symbolKind, symbolRange, symbolRange);
 }
 
 // Implements "go to document symbols"
-export default function gmsDocumentSymbolsProvider(document, state) {
-  const referenceTree = state.get("referenceTree");
-  const symbolsInFile = referenceTree.reduce((acc, symbol) => {
-    // check if the smybol is declared, defined, references or assigned
-    // in this file
-    if (!symbol || !symbol.name) return acc;
-    const { declared, defined, ref, assigned } = symbol;
+export default function gmsDocumentSymbolsProvider(document: vscode.TextDocument, state: State): vscode.DocumentSymbol[] {
+  const referenceTree = state.get<ReferenceTree>('referenceTree') || [];
+  const symbolsInFile = referenceTree.reduce<vscode.DocumentSymbol[]>((acc, symbol) => {
+    if (!symbol || !symbol.name) {
+      return acc;
+    }
+    const { declared, defined, ref, assigned } = symbol as ReferenceSymbol & { ref?: SymbolActionLocation[]; assigned?: SymbolActionLocation[] };
     if (declared?.file === document.fileName) {
-      // add to symbols
-      acc.push(createDocumentSymbol(symbol, "declared"));
+      acc.push(createDocumentSymbol(symbol, 'declared'));
     }
     if (defined?.file === document.fileName) {
-      // add to symbols
-      acc.push(createDocumentSymbol(symbol, "defined"));
+      acc.push(createDocumentSymbol(symbol, 'defined'));
     }
-    ref?.forEach((ref) => {
-      if (ref.file === document.fileName) {
-        // add to symbols
-        acc.push(createDocumentSymbol(symbol, "referenced"));
+    ref?.forEach(r => {
+      if (r.file === document.fileName) {
+        acc.push(createDocumentSymbol(symbol, 'referenced'));
       }
     });
-    assigned?.forEach((ref) => {
-      if (ref.file === document.fileName) {
-        // add to symbols
-        acc.push(createDocumentSymbol(symbol, "assigned"));
+    assigned?.forEach(r => {
+      if (r.file === document.fileName) {
+        acc.push(createDocumentSymbol(symbol, 'assigned'));
       }
     });
-
     return acc;
   }, []);
   return symbolsInFile;
-};
+}

@@ -1,9 +1,26 @@
-const readline = require('readline');
-const fs = require('fs');
-const path = require('path');
+import * as readline from 'readline';
+import * as fs from 'fs';
+import * as path from 'path';
 
-export default function createRefTree(refFile) {
-  return new Promise((resolve, reject) => {
+interface SymbolLocation { line: number; column: number; file?: string; base?: string }
+interface SymbolAction extends SymbolLocation {}
+interface SymbolEntry {
+  name?: string;
+  nameLo?: string;
+  declared?: SymbolLocation;
+  defined?: SymbolLocation;
+  isSubset?: boolean;
+  superset?: SymbolEntry;
+  subsets?: SymbolEntry[];
+  symId?: string;
+  type?: string;
+  domain?: (SymbolEntry | { name: string })[];
+  description?: string;
+  [key: string]: any; // dynamic keys like assigned, ref, etc.
+}
+
+export default function createRefTree(refFile: string): Promise<SymbolEntry[]> {
+  return new Promise<SymbolEntry[]>((resolve, reject) => {
     const rl = readline.createInterface({
       input: fs.createReadStream(refFile),
       crlfDelay: Infinity
@@ -12,14 +29,14 @@ export default function createRefTree(refFile) {
     // the ctags compatible .tags file
     // const tagsFile = fs.openSync(`${rootDir}${path.sep}.tags`, 'w')
     // the variable where we will store our reference tree
-    let json = {};
+  const json: Record<string | number, SymbolEntry> = {};
 
-    rl.on('line', (line) => {
+  rl.on('line', (line: string) => {
       const segments = line.split(' ');
 
       if (!isNaN(+segments[1])) {
         if (segments[4] === 'declared' || segments[4] === 'defined') {
-          let symbol = json[Number(segments[1])] = json[Number(segments[1])] || {};
+          let symbol: SymbolEntry = json[Number(segments[1])] = json[Number(segments[1])] || {};
 
           let file;
           let base;
@@ -55,8 +72,8 @@ export default function createRefTree(refFile) {
           */
 
         } else {
-          json[segments[1]] = json[segments[1]] || {};
-          let action = json[segments[1]][segments[4]] = json[segments[1]][segments[4]] || [];
+          json[segments[1]] = json[segments[1]] || {} as SymbolEntry;
+          let action: SymbolAction[] = json[segments[1]][segments[4]] = json[segments[1]][segments[4]] || [];
 
           let file;
           let base;
@@ -75,15 +92,18 @@ export default function createRefTree(refFile) {
       } else if (segments[0] === '0') {
         return;
       } else {
-        let symbol = json[segments[0]] = json[segments[0]] || {};
+  let symbol: SymbolEntry = json[segments[0]] = json[segments[0]] || {};
         const domainCount = Number(segments[4]);
-        let domain = [];
+  let domain: (SymbolEntry | { name: string })[] = [];
         if (domainCount > 0) {
           const range = segments.slice(6, 6 + domainCount);
           // '0' represents universal set
           domain = range.map((entry) => {
-            if (entry !== '0' && json[entry].name !== symbol.name) return json[entry];
-            else return { name: '*' };
+            if (entry !== '0' && json[entry].name !== symbol.name) {
+              return json[entry];
+            } else {
+              return { name: '*' };
+            }
           });
         }
         
@@ -105,24 +125,28 @@ export default function createRefTree(refFile) {
             'superset': symbol.domain[0]
           });
           // add this set to the list of subsets of the superset
-          addSubsetToSupersetRecursive(symbol, symbol.superset);
+          if (symbol.superset) {
+            addSubsetToSupersetRecursive(symbol, symbol.superset);
+          }
         }
       }
     });
 
-    function addSubsetToSupersetRecursive(subset, superset) {
+  function addSubsetToSupersetRecursive(subset: SymbolEntry, superset: SymbolEntry) {
       superset.subsets = superset.subsets || [];
       superset.subsets.push(subset);
-      if (superset.isSubset) {
+      if (superset.isSubset && superset.superset) {
         addSubsetToSupersetRecursive(subset, superset.superset);
       }
     }
 
     rl.on('close', () => {
       fs.unlink(refFile, (err) => {
-        if (err) throw err;
+        if (err) {
+          return reject(err);
+        }
+        resolve(Object.values(json));
       });
-      resolve(Object.values(json));
     });
 
     rl.on('error', reject);

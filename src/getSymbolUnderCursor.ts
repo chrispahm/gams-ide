@@ -1,13 +1,21 @@
-const vscode = require("vscode");
-const gamsParser = require('./utils/gamsParser.js');
+import * as vscode from 'vscode';
+import gamsParser from './utils/gamsParser.js';
+import State from './State';
+import { ReferenceTree, ReferenceSymbol, CompileTimeVariable, GamsLineAst } from './types/gams-symbols';
 
-export default async function getSymbolUnderCursor(args) {
-  const {
-    event,
-    gamsDataView,
-    state,
-    gamsView
-  } = args;
+interface GetSymbolArgs {
+  event: {
+    textEditor: vscode.TextEditor;
+    selections: readonly vscode.Selection[];
+    kind?: vscode.TextEditorSelectionChangeKind;
+  };
+  gamsDataView?: vscode.WebviewView;
+  gamsView?: vscode.WebviewView;
+  state: State;
+}
+
+export default async function getSymbolUnderCursor(args: GetSymbolArgs): Promise<void> {
+  const { event, gamsDataView, state, gamsView } = args;
   
   /*
   const document = editor.document;
@@ -16,20 +24,20 @@ export default async function getSymbolUnderCursor(args) {
   const lineText = line.text;
   const symbol = lineText.substring(line.firstNonWhitespaceCharacterIndex, lineText.length);
   */
-  let editor = event.textEditor;
+  const editor = event.textEditor;
   // Get the document
-  let document = editor.document;
+  const document = editor.document;
 
   // Get the position of the cursor
-  let position = event.selections[0].active;
+  const position = event.selections[0].active;
 
   // Get the range of the word at the position
-  let wordRange = document.getWordRangeAtPosition(position);
+  const wordRange = document.getWordRangeAtPosition(position);
 
   // Check if there is a word range
   if (wordRange) {
     // Get the text of the word
-    let word = document.getText(wordRange);    
+  const word = document.getText(wordRange);    
     const characterBeforeWord = wordRange.start.character ? document.getText(
       new vscode.Range(
         new vscode.Position(wordRange.start.line, wordRange.start.character - 1),
@@ -38,21 +46,21 @@ export default async function getSymbolUnderCursor(args) {
     ) : "";
     
     // find the word in the reference tree
-    const referenceTree = state.get("referenceTree");
-    const compileTimeVariables = state.get("compileTimeVariables");
-    const solves = state.get("solves");
+  const referenceTree = state.get<ReferenceTree>('referenceTree');
+  const compileTimeVariables = state.get<CompileTimeVariable[]>('compileTimeVariables');
+  const solves = state.get<any>('solves');
     // const position = editor.selection.active;
     const line = position.line;
     const column = position.character;
     const file = document.fileName;
 
-    let quotedElement = "";
-    let functionName = "";
-    let domain = [];
-    let domainIndex = 0;
+  let quotedElement = '';
+  let functionName = '';
+  let domain: string[] = [];
+  let domainIndex = 0;
 
     // first, we try to find the reference in the reference tree without checking the AST
-    let matchingRef;
+  let matchingRef: (ReferenceSymbol | CompileTimeVariable) | undefined;
     if (characterBeforeWord === "%") {
       matchingRef = compileTimeVariables?.find(
         (item) => item.name?.toLowerCase() === word?.toLowerCase()
@@ -69,7 +77,7 @@ export default async function getSymbolUnderCursor(args) {
     }
 
     const { text: lineText } = document.lineAt(line);
-    let ast = [];
+  let ast: GamsLineAst | [] = [];
     try {
       ast = gamsParser.parse(lineText);
     } catch (error) {
@@ -77,34 +85,34 @@ export default async function getSymbolUnderCursor(args) {
     }
     if (ast) {
       // parse the line using the PEG parser      
-      const gamsSymbol = ast.find((entry) =>
+  const gamsSymbol = (ast as any).find((entry: any) =>
       (entry && entry.name?.toString().toLowerCase().includes(word?.toLowerCase())
         && entry.start <= column
         && entry.end >= column
       ));
 
       if (gamsSymbol) {
-        const functionRef = referenceTree?.find((item) => item.nameLo === gamsSymbol?.functionName?.toLowerCase());
+  const functionRef = referenceTree?.find((item) => item.nameLo === gamsSymbol?.functionName?.toLowerCase());
         if (gamsSymbol.isQuoted) {
           quotedElement = gamsSymbol.name;
         }
         functionName = gamsSymbol.functionName;
-        domain = functionRef?.domain?.map((domain) => domain.name);
+        domain = functionRef?.domain?.map(d => d.name) || [];
         domainIndex = gamsSymbol.index;
 
-        if (!matchingRef) {
+        if (!matchingRef && functionRef?.domain) {
           matchingRef = functionRef.domain[domainIndex];
         }
       }
     }
     
-    if (matchingRef && gamsView) {
+  if (matchingRef && (matchingRef as ReferenceSymbol).name && gamsView) {
       const data = {
-        ...matchingRef,
-        domain: matchingRef.domain?.map((domain) => ({ name: domain.name })),
-        subsets: matchingRef.subsets?.map((subset) => ({ name: subset.name })),
+    ...matchingRef,
+    domain: (matchingRef as ReferenceSymbol).domain?.map(domain => ({ name: domain.name })),
+    subsets: (matchingRef as ReferenceSymbol).subsets?.map(subset => ({ name: subset.name })),
         superset: {
-          name: matchingRef.superset?.name
+      name: (matchingRef as ReferenceSymbol).superset?.name
         },
         quotedElement,
         functionName,
@@ -115,10 +123,10 @@ export default async function getSymbolUnderCursor(args) {
         historyCursorColumn: column + 1
       };
 
-      state.update("curSymbol", data);
+    state.update('curSymbol', data);
 
       // send data to webview
-      gamsView.webview.postMessage({
+  gamsView.webview.postMessage({
         command: "updateReference",
         data
       });
@@ -138,18 +146,13 @@ export default async function getSymbolUnderCursor(args) {
     //   terminal_symbols.show(true);
     //}
     // only update data view if it enabled in the settings
-    const isDataParsingEnabled = vscode.workspace.getConfiguration("gamsIde").get("parseGamsData");
-    if (matchingRef && gamsDataView && isDataParsingEnabled) {
-      const dataStore = state.get("dataStore") || {};
-      console.log("dataStore", dataStore[matchingRef.name]);
-      
+    const isDataParsingEnabled = vscode.workspace.getConfiguration('gamsIde').get<boolean>('parseGamsData');
+    if (matchingRef && (matchingRef as ReferenceSymbol).name && gamsDataView && isDataParsingEnabled) {
+      const dataStore = state.get<Record<string, any>>('dataStore') || {};
+      const name = (matchingRef as ReferenceSymbol).name!;
       gamsDataView.webview.postMessage({
-        command: "updateSolveData",
-        data: {
-          solves: solves,
-          symbol: word,
-          data: dataStore[matchingRef.name]
-        },
+        command: 'updateSolveData',
+        data: { solves, symbol: word, data: dataStore[name] },
       });
     } else if (gamsDataView && isDataParsingEnabled) {
       gamsDataView.webview.postMessage({

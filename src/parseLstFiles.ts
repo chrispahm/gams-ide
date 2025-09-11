@@ -1,15 +1,19 @@
-const vscode = require("vscode");
-const path = require("path");
-const { debounce } = require("lodash");
-const lstParser = require("./lstParser");
+import * as vscode from 'vscode';
+import * as path from 'path';
+import { debounce } from 'lodash';
+import lstParser from './lstParser';
+import State from './State';
+import { LstEntry } from './types/gams-symbols';
 
-async function listenToLstFiles(args) {
-  const {
-    document,
-    contentChanges,
-    gamsView,
-    state
-  } = args;
+interface ListenArgs {
+  document: vscode.TextDocument;
+  contentChanges: readonly vscode.TextDocumentContentChangeEvent[];
+  gamsView?: vscode.WebviewView;
+  state: State;
+}
+
+async function listenToLstFiles(args: ListenArgs): Promise<void> {
+  const { document, contentChanges, gamsView, state } = args;
   // Check if the document is a listing file
   // and if the document was changed externally (!document.isDirty)
   // and if the document is open in any of the visible editors
@@ -18,10 +22,10 @@ async function listenToLstFiles(args) {
   const isContentChangedExternally = contentChanges.length;
   if (path.extname(document.fileName).toLowerCase() === ".lst" && !document.isDirty && isOpen) {
     // parse the listing file
-    const ast = await lstParser(document.fileName);
-    state.update("lstTree", ast);
+  const ast: LstEntry[] = await lstParser(document.fileName);
+  state.update('lstTree', ast);
     // check if the active document is a listing file
-    const isListing = vscode.window.activeTextEditor && vscode.window.activeTextEditor.document.fileName.toLowerCase().endsWith('.lst');
+  const isListing = !!(vscode.window.activeTextEditor && vscode.window.activeTextEditor.document.fileName.toLowerCase().endsWith('.lst'));
     // send the AST to the webview    
     gamsView?.webview?.postMessage({
       command: "updateListing",
@@ -39,16 +43,14 @@ async function listenToLstFiles(args) {
     // check if there are compilation errors in the listing file
     const shouldJumpToError = vscode.workspace.getConfiguration("gamsIde").get("jumpToFirstError");
     if (shouldJumpToError) {
-      const firstCompilationError = ast.find(node => node.type?.startsWith("Error"));
-      if (firstCompilationError) {
-        // jump to the first compilation error
-        const firstCompilationErrorPosition = new vscode.Position(firstCompilationError.line - 1, firstCompilationError.column[0]);
-        const options = {
-          selection: new vscode.Range(firstCompilationErrorPosition, firstCompilationErrorPosition),
-          preview: true,
-          revealType: vscode.TextEditorRevealType.InCenterIfOutsideViewport
-        };
-        vscode.window.showTextDocument(document, options);
+      const firstCompilationError = ast.find(node => typeof node.type === 'string' && (node.type as string).startsWith('Error'));
+      if (firstCompilationError && typeof firstCompilationError.line === 'number' && (Array.isArray(firstCompilationError.column) || typeof firstCompilationError.column === 'number')) {
+        const lineNo = typeof firstCompilationError.line === 'number' ? firstCompilationError.line : (firstCompilationError.line as number[])[0];
+        const colValRaw = firstCompilationError.column;
+        const colVal = Array.isArray(colValRaw) ? colValRaw[0] : colValRaw ?? 0;
+        const firstCompilationErrorPosition = new vscode.Position(Math.max(0, lineNo - 1), Math.max(0, colVal));
+  const options: vscode.TextDocumentShowOptions = { selection: new vscode.Range(firstCompilationErrorPosition, firstCompilationErrorPosition), preview: true };
+        await vscode.window.showTextDocument(document, options);
         return;
       }
     }
@@ -56,31 +58,34 @@ async function listenToLstFiles(args) {
     // and jump to it
     const isJumpToAbortEnabled = vscode.workspace.getConfiguration("gamsIde").get("jumpToAbort");
     if (isJumpToAbortEnabled) {
-      const abortStatement = ast.find(node => node.type === "Abort");
-      if (abortStatement) {
-        const abortPosition = new vscode.Position(abortStatement.line[0] - 1, abortStatement.column[0]);
-        const options = {
-          selection: new vscode.Range(abortPosition, abortPosition),
-          preview: true,
-          revealType: vscode.TextEditorRevealType.InCenterIfOutsideViewport
-        };
-        vscode.window.showTextDocument(document, options);
+      const abortStatement = ast.find(node => node.type === 'Abort');
+      if (abortStatement && Array.isArray(abortStatement.line) && Array.isArray(abortStatement.column)) {
+        const lineNo = abortStatement.line[0];
+        const colNo = abortStatement.column[0];
+        const abortPosition = new vscode.Position(Math.max(0, lineNo - 1), Math.max(0, colNo));
+  const options: vscode.TextDocumentShowOptions = { selection: new vscode.Range(abortPosition, abortPosition), preview: true };
+        await vscode.window.showTextDocument(document, options);
         return;
       }
     }
     // next, check if a default parameter to jump to is set
     const jumpTo = vscode.workspace.getConfiguration("gamsIde").get("defaultParameterToJumpToAfterSolve");
     if (jumpTo) {
-      // find the parameter in the ast
-      const jumpToParameter = ast.flatMap(node => node?.entries).findLast(entry => entry?.name?.toLowerCase() === jumpTo.toLowerCase());
-      if (jumpToParameter) {
-        const jumpToPosition = new vscode.Position(jumpToParameter.line - 1, jumpToParameter.column);
-        const options = {
-          selection: new vscode.Range(jumpToPosition, jumpToPosition),
-          preview: true,
-          revealType: vscode.TextEditorRevealType.InCenterIfOutsideViewport
-        };
-        vscode.window.showTextDocument(document, options);
+      const lower = (jumpTo as string).toLowerCase();
+      const entries = ast.flatMap(node => node?.entries || []);
+      // emulate findLast
+      let jumpToParameter: any = undefined;
+      for (let i = entries.length - 1; i >= 0; i--) {
+        const e = entries[i];
+        if (e?.name?.toLowerCase() === lower) {
+          jumpToParameter = e;
+          break;
+        }
+      }
+      if (jumpToParameter && typeof jumpToParameter.line === 'number' && typeof jumpToParameter.column === 'number') {
+        const jumpToPosition = new vscode.Position(Math.max(0, jumpToParameter.line - 1), Math.max(0, jumpToParameter.column));
+  const options: vscode.TextDocumentShowOptions = { selection: new vscode.Range(jumpToPosition, jumpToPosition), preview: true };
+        await vscode.window.showTextDocument(document, options);
         return;
       }
     }

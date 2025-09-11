@@ -1,4 +1,9 @@
-export default function getGamsIdeDataViewContainerContent(options) {
+export interface DataViewContainerContentOptions {
+  webviewToolkitUri: any; // webview uri
+  codiconsUri: any; // webview uri
+  isDataParsingEnabled: boolean;
+}
+export default function getGamsIdeDataViewContainerContent(options: DataViewContainerContentOptions) {
   const { webviewToolkitUri, codiconsUri, isDataParsingEnabled } = options;
 
   return `

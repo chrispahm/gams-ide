@@ -1,20 +1,21 @@
-const vscode = require("vscode");
-const gmsDeclarationProvider = require("./gmsDeclarationProvider.js");
-const gmsDefinitionProvider = require("./gmsDefinitionProvider.js");
-const gmsHoverProvider = require("./gmsHoverProvider.js");
-const gmsReferenceProvider = require("./gmsReferenceProvider.js");
-const gmsImplementationProvider = require("./gmsImplementationProvider.js");
-const gmsDocumentSymbolsProvider = require("./gmsDocumentSymbolsProvider.js");
-const gmsCompletionItemsProvider = require("./gmsCompletionItemsProvider.js");
-const gmsSignatureHelpProvider = require("./gmsSignatureHelpProvider.js");
+import * as vscode from 'vscode';
+import gmsDeclarationProvider from './gmsDeclarationProvider';
+import gmsDefinitionProvider from './gmsDefinitionProvider';
+import gmsHoverProvider from './gmsHoverProvider';
+import gmsReferenceProvider from './gmsReferenceProvider';
+import gmsImplementationProvider from './gmsImplementationProvider';
+import gmsDocumentSymbolsProvider from './gmsDocumentSymbolsProvider';
+import gmsCompletionItemsProvider from './gmsCompletionItemsProvider';
+import gmsSignatureHelpProvider from './gmsSignatureHelpProvider';
+import State from '../State';
 
-export default function implementLSPMethods(context, state) {
+export default function implementLSPMethods(context: vscode.ExtensionContext, state: State): void {
   // Register the GAMS declaration provider
   context.subscriptions.push(
     vscode.languages.registerDeclarationProvider(
       { scheme: "file", language: "gams" },
       {
-        provideDeclaration: (document, position) => {
+  provideDeclaration: (document: vscode.TextDocument, position: vscode.Position) => {
           return gmsDeclarationProvider(document, position, state);
         },
       }
@@ -26,7 +27,7 @@ export default function implementLSPMethods(context, state) {
     vscode.languages.registerDefinitionProvider(
       { scheme: "file", language: "gams" },
       {
-        provideDefinition: (document, position) => {
+  provideDefinition: (document: vscode.TextDocument, position: vscode.Position) => {
           return gmsDefinitionProvider(document, position, state);
         },
       }
@@ -38,7 +39,7 @@ export default function implementLSPMethods(context, state) {
     vscode.languages.registerHoverProvider(
       { scheme: "file", language: "gams" },
       {
-        provideHover: (document, position) => {
+  provideHover: (document: vscode.TextDocument, position: vscode.Position) => {
           return gmsHoverProvider(document, position, state);
         },
       }
@@ -50,7 +51,7 @@ export default function implementLSPMethods(context, state) {
     vscode.languages.registerReferenceProvider(
       { scheme: "file", language: "gams" },
       {
-        provideReferences: (document, position) => {
+  provideReferences: (document: vscode.TextDocument, position: vscode.Position) => {
           return gmsReferenceProvider(document, position, state);
         },
       }
@@ -62,7 +63,7 @@ export default function implementLSPMethods(context, state) {
     vscode.languages.registerImplementationProvider(
       { scheme: "file", language: "gams" },
       {
-        provideImplementation: (document, position) => {
+  provideImplementation: (document: vscode.TextDocument, position: vscode.Position) => {
           return gmsImplementationProvider(document, position, state);
         },
       }
@@ -88,8 +89,8 @@ export default function implementLSPMethods(context, state) {
   */
   // provide auto-completeion 
   context.subscriptions.push(
-    vscode.languages.registerCompletionItemProvider("gams", {
-      provideCompletionItems(document, position) {
+    vscode.languages.registerCompletionItemProvider('gams', {
+      provideCompletionItems(document: vscode.TextDocument, position: vscode.Position) {
         return gmsCompletionItemsProvider(document, position, state);
       }
     }, " ", ",", "(", "[", "{", ":", ">", "<", "=", "+", "-", "*", "/", "^", "!", "&", "|", ">", "<", "\t")
@@ -97,8 +98,8 @@ export default function implementLSPMethods(context, state) {
 
   // provide signature help
   context.subscriptions.push(
-    vscode.languages.registerSignatureHelpProvider("gams", {
-      provideSignatureHelp(document, position) {
+    vscode.languages.registerSignatureHelpProvider('gams', {
+      provideSignatureHelp(document: vscode.TextDocument, position: vscode.Position) {
         return gmsSignatureHelpProvider(document, position, state);
       }
     }, "(", ",")

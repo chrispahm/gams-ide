@@ -123,8 +123,18 @@ argumentList
 
 
 argument
-  = functionCall / star / identifier / stringLiteral / numberLiteral / group
+  = functionCall / gamsGlobal / star / identifier / stringLiteral / numberLiteral / group
 
+gamsGlobal
+  = "%" name:identifier "%" {
+    return {
+      type: "gamsGlobal",
+      name: name.name,
+      isQuoted: false,
+      wsCount: 2 // for the two '%' symbols
+    };
+  }
+  
 group
   = "(" args:argumentList ")" {
     return {type: "group", args: args};

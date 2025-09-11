@@ -1,36 +1,76 @@
-const vscode = require("vscode");
-const { format, parse } = require("node:path");
-const { exec } = require('node:child_process');
-const { readFile, access, unlink } = require("fs/promises");
-const parseError = require("./utils/parseError.js");
-const createRefTree = require("./utils/createRefTree.js");
-const createGamsCompileCommand = require("./utils/createGamsCompileCommand.js");
-// const gdx = require('node-gdx')();
-const createRefTreeWithSymbolValues = require("./createRefTreeWithSymbolValues.js");
-const { parseIncludeFileSummary } = require("./createIncludeTree.js");
+import * as vscode from 'vscode';
+import { format, parse } from 'node:path';
+import { exec } from 'node:child_process';
+import { readFile, access, unlink } from 'fs/promises';
+import parseError, { ParsedErrorMessage } from './utils/parseError';
+import createRefTree from './utils/createRefTree.js';
+import createGamsCompileCommand from './utils/createGamsCompileCommand.js';
+import createRefTreeWithSymbolValues from './createRefTreeWithSymbolValues.js';
+import { parseIncludeFileSummary } from './createIncludeTree.js';
+import State from './State';
+import { ReferenceTree, CompileTimeVariable } from './types/gams-symbols';
 
-function execAsync(command) {
-  return new Promise((resolve) => {
+interface ExecResult {
+  error: (Error & { code?: number }) | null;
+  stdout: string;
+  stderr: string;
+}
+
+interface UpdateDiagnosticsArgs {
+  document: vscode.TextDocument;
+  collection: vscode.DiagnosticCollection;
+  state: State;
+  terminal?: vscode.Terminal;
+  forceDataParsing?: boolean;
+  progress?: vscode.Progress<{ message?: string; increment?: number }>;
+}
+
+interface CompileCommandResult {
+  gamsExe: string;
+  gamsArgs: string[];
+  refPath: string;
+  errorPath: string;
+  listingPath: string;
+  dumpPath: string;
+  gdxPath?: string;
+  scratchDirectory: string;
+  filePath: string; // directory of main file
+}
+
+interface IncludeFileSummaryEntry {
+  file: string;
+  count: number;
+  depth: number;
+  parent?: string;
+}
+
+interface ParseIncludeFileSummaryResult {
+  includeFileSummary: IncludeFileSummaryEntry[];
+  compileTimeVariables: CompileTimeVariable[];
+}
+
+function execAsync(command: string): Promise<ExecResult> {
+  return new Promise(resolve => {
     exec(command, (error, stdout, stderr) => {
       resolve({ error, stdout, stderr });
     });
   });
 }
 
-export default async function updateDiagnosticsWithProgrss(args) {
+export default async function updateDiagnosticsWithProgrss(args: UpdateDiagnosticsArgs): Promise<void> {
   vscode.window.withProgress({
     location: vscode.ProgressLocation.Window,
     cancellable: false,
     title: 'Compiling GAMS'
   }, async (progress) => {
     progress.report({ increment: 0 });
-    args.progress = progress;
-    await updateDiagnostics(args);  
+    (args as UpdateDiagnosticsArgs).progress = progress;
+    await updateDiagnostics(args);
     progress.report({ increment: 100 });    
   });
 };
 
-async function updateDiagnostics(args) {
+async function updateDiagnostics(args: UpdateDiagnosticsArgs): Promise<void> {
   const {
     document,
     collection,
@@ -47,10 +87,10 @@ async function updateDiagnostics(args) {
     // clear the previous collection, as we are going to re-populate it
     collection.clear();
     // get the compile statement for the current document
-    const compileCommand = await createGamsCompileCommand(document.fileName, [shouldParseGamsData ? "dumpopt=11" : ""]);
+    const compileCommand: CompileCommandResult = await createGamsCompileCommand(document.fileName, [shouldParseGamsData ? 'dumpopt=11' : '']);
     // run the compile command
     const command = `${compileCommand.gamsExe} ${compileCommand.gamsArgs.join(" ")}`;
-    let res;
+    let res: ExecResult | undefined;
     try {
       // run the compile command      
       res = await execAsync(command);
@@ -65,7 +105,7 @@ async function updateDiagnostics(args) {
       // show error in VS Code output
       await vscode.window.showErrorMessage("GAMS compilation failed: " + command);
       return;
-    } else if (res.error) {
+  } else if (res.error) {
       // show error in VS Code output
       // vscode.window.showErrorMessage("GAMS compilation failed: Check the GAMS output in the terminal");
       // terminal?.show(true);
@@ -77,20 +117,20 @@ async function updateDiagnostics(args) {
 
     try {
       // parse the reference tree
-      const referenceTree = await createRefTree(compileCommand.refPath);
-      state.update("referenceTree", referenceTree);
+      const referenceTree: ReferenceTree = await createRefTree(compileCommand.refPath);
+      state.update('referenceTree', referenceTree);
 
       // parse the contents of the error file
-      const errorFileContents = await readFile(compileCommand.errorPath, "utf8");
+      const errorFileContents = await readFile(compileCommand.errorPath, 'utf8');
       // delete the error file, but do not wait for it
       unlink(compileCommand.errorPath);
       // if include parsing is enabled, parse the include file summary
-      parseIncludeFileSummary(compileCommand.listingPath, state).then(({ includeFileSummary, compileTimeVariables }) => {
-        state.update("parsedIncludes", includeFileSummary);
-        state.update("compileTimeVariables", compileTimeVariables);
+      (parseIncludeFileSummary(compileCommand.listingPath, state) as Promise<ParseIncludeFileSummaryResult>).then(({ includeFileSummary, compileTimeVariables }) => {
+        state.update('parsedIncludes', includeFileSummary);
+        state.update('compileTimeVariables', compileTimeVariables);
         // call the refresh command on the include tree view
         if (includeFileSummary.length > 0) {
-          vscode.commands.executeCommand("gams.refreshIncludeTree");
+          vscode.commands.executeCommand('gams.refreshIncludeTree');
         }
         // delete the lst file, but do not wait for it
         unlink(compileCommand.listingPath);
@@ -127,7 +167,7 @@ async function updateDiagnostics(args) {
           });
           */
           // inidcate that main diagnostics are finished
-          progress.report({ increment: 100 });
+          progress?.report({ increment: 100 });
           vscode.window.withProgress({
             location: vscode.ProgressLocation.Notification,
             cancellable: true,
@@ -143,26 +183,26 @@ async function updateDiagnostics(args) {
               state
             }).then(() => {
               // call the refresh command on the include tree view
-              vscode.commands.executeCommand("gams.getSymbolUnderCursor");
+              vscode.commands.executeCommand('gams.getSymbolUnderCursor');
               // delete the dmp lst file, but do not wait for it
               // indicate that data parsing is finished            
               dataProgress.report({ increment: 100 });
-            }).catch(err => {
+            }).catch((err: unknown) => {
               // show error in VS Code output
               // and add button to open the dmp file
-              if (!state.get("ignoreDataValueParsingError")) {
-                vscode.window.showWarningMessage("GAMS Data Parsing: " + err + ".\nClick 'Hide error' to hide for this session.", "Hide error", "Disable data parsing", "Open scrdir", "Open DMP .lst").then((value) => {
+              if (!state.get('ignoreDataValueParsingError')) {
+                vscode.window.showWarningMessage('GAMS Data Parsing: ' + err + ".\nClick 'Hide error' to hide for this session.", 'Hide error', 'Disable data parsing', 'Open scrdir', 'Open DMP .lst').then((value) => {
                   const lstPath = format({ ...parse(compileCommand.dumpPath), base: '', ext: '.gms.lst' });
-                  if (value === "Open DMP .lst") {
+                  if (value === 'Open DMP .lst') {
                     vscode.workspace.openTextDocument(lstPath).then((doc) => {
                       vscode.window.showTextDocument(doc);
                     });
-                  } else if (value === "Open scrdir") {
-                    vscode.commands.executeCommand("revealFileInOS", vscode.Uri.file(lstPath));
-                  } else if (value === "Disable data parsing") {
-                    vscode.workspace.getConfiguration("gamsIde").update("parseGamsData", false);
-                  } else if (value === "Hide error") {
-                    state.update("ignoreDataValueParsingError", true);
+                  } else if (value === 'Open scrdir') {
+                    vscode.commands.executeCommand('revealFileInOS', vscode.Uri.file(lstPath));
+                  } else if (value === 'Disable data parsing') {
+                    vscode.workspace.getConfiguration('gamsIde').update('parseGamsData', false);
+                  } else if (value === 'Hide error') {
+                    state.update('ignoreDataValueParsingError', true);
                   }
                 });
                 console.error("error", err);
@@ -170,7 +210,7 @@ async function updateDiagnostics(args) {
                 // delete the dmp lst file, but do not wait for it
                 unlink(compileCommand.dumpPath + ".lst");
               }
-              vscode.commands.executeCommand("gams.getSymbolUnderCursor");
+              vscode.commands.executeCommand('gams.getSymbolUnderCursor');
               dataProgress.report({ increment: 100 });
             });
           });
@@ -180,18 +220,18 @@ async function updateDiagnostics(args) {
       }
       let errors = errorFileContents.split(/\r\n?|\n/).slice(1);
       // get max errors to display from settings
-      const maxErrorsToDisplay = vscode.workspace.getConfiguration("gamsIde").get("maxErrorsToDisplay");
-      if (maxErrorsToDisplay > 0) {
+      const maxErrorsToDisplay = vscode.workspace.getConfiguration('gamsIde').get<number>('maxErrorsToDisplay');
+  if ((maxErrorsToDisplay ?? 0) > 0) {
         errors = errors.slice(0, maxErrorsToDisplay);
       }
-      const errorMessages = await Promise.all(
+      const errorMessages: ParsedErrorMessage[] = await Promise.all(
         errors
           .filter(err => err.length)
           .map((err, i) => parseError(err, i))
       );
       // error messages are for multiple files, 
       // so we group them by filename and set the collection accordingly
-      const errorMessagesByFile = errorMessages.reduce((acc, err) => {
+      const errorMessagesByFile = errorMessages.reduce<Record<string, ParsedErrorMessage[]>>((acc, err) => {
         if (!acc[err.errFile]) {
           acc[err.errFile] = [];
         }
@@ -200,7 +240,13 @@ async function updateDiagnostics(args) {
       }, {});
       Object.keys(errorMessagesByFile).forEach(file => {
         const uri = vscode.Uri.file(file);
-        collection.set(uri, errorMessagesByFile[file]);
+        const diagnostics: vscode.Diagnostic[] = errorMessagesByFile[file].map(msg => {
+          const d = new vscode.Diagnostic(msg.range, msg.message, msg.severity);
+          d.source = 'gams';
+          d.code = msg.code;
+          return d;
+        });
+        collection.set(uri, diagnostics);
       });
     } catch (error) {
       // progress.report({ increment: 100 });
@@ -215,8 +261,8 @@ async function updateDiagnostics(args) {
         lstExists = false;
       }
       if (lstExists) {
-        vscode.window.showErrorMessage("GAMS compilation failed! Check the GAMS output in the terminal and the .lst file.", "Open .lst file").then((value) => {
-          if (value === "Open .lst file") {
+        vscode.window.showErrorMessage('GAMS compilation failed! Check the GAMS output in the terminal and the .lst file.', 'Open .lst file').then((value) => {
+          if (value === 'Open .lst file') {
             // open lst file, or show error if it does not exist
             vscode.workspace.openTextDocument(compileCommand.listingPath)
               .then((doc) => {
@@ -227,7 +273,7 @@ async function updateDiagnostics(args) {
         terminal?.show(true);
         terminal?.sendText(command);
       } else {
-        vscode.window.showErrorMessage("GAMS compilation failed! Check the GAMS output in the terminal. Stdout:" + stdout,);
+        vscode.window.showErrorMessage('GAMS compilation failed! Check the GAMS output in the terminal. Stdout:' + stdout);
         // focus on the terminal, and send the gams command to the terminal
         terminal?.show(true);
         terminal?.sendText(command);

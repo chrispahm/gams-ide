@@ -1,4 +1,9 @@
-export default function getGamsIdeViewContainerContent(options) {
+export interface ViewContainerContentOptions {
+  codiconsUri: any; // URI converted to webview form (string-like)
+  vueUri: any;
+  webviewToolkitUri: any;
+}
+export default function getGamsIdeViewContainerContent(options: ViewContainerContentOptions) {
   const {
     codiconsUri,
     vueUri,
