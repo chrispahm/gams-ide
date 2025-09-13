@@ -30,8 +30,14 @@ export default function dataParser(file: string): Promise<DataParserEntry[]> {
     let lineno = 0;
 
     function save(type: string | null, pos: [number[], number[]] | null, push: boolean, child: DataParserEntryChild | null) {
-  if (!entry) { entry = { type: type || '' }; }
-  if (type) { entry.type = type; }
+      if (!entry) { 
+        entry = { 
+          type: type || '' 
+        }; 
+      }
+      if (type) { 
+        entry.type = type; 
+      }
       if (pos) {
         entry.line = pos[0];
         entry.column = pos[1];
@@ -51,43 +57,53 @@ export default function dataParser(file: string): Promise<DataParserEntry[]> {
       }
     }
 
-  rl.on('line', (line: string) => {
+    rl.on('line', (line: string) => {
       lineno++;
 
       if ((/^(\*\*\*\*)\s*\d\d/).test(line)) {
-  const m = line.match(/(\*\*\*\*)\s*(.*)/);
-  const errorMessage = m ? m[2] : '';
+        const m = line.match(/(\*\*\*\*)\s*(.*)/);
+        const errorMessage = m ? m[2] : '';
         save("Error: " + errorMessage, [
           [lineno],
           [0]
         ], true, null);
       } else if (line.includes('Model Statistics    ')) {
-  if (entry) { save(null, null, true, null); }
+        if (entry) { 
+          save(null, null, true, null); 
+        }
         save(line, [
           [lineno],
           [0]
         ], true, null);
       } else if (line.includes('Equation Listing')) {
-  if (entry) { save(null, null, true, null); }
+        if (entry) { 
+          save(null, null, true, null); 
+        }
         save(line, [
           [lineno],
           [0]
         ], false, null);
       } else if (line.includes('Column Listing')) {
-  if (entry) { save(null, null, true, null); }
+        if (entry) { 
+          save(null, null, true, null); 
+        }
         save(line, [
           [lineno],
           [0]
         ], false, null);
       } else if (line.includes('Solution Report     ')) {
-  if (entry) { save(null, null, true, null); }
+        if (entry) { 
+          save(null, null, true, null); 
+        }
         save(line, [
           [lineno],
           [0]
         ], true, null);
       } else if (line.includes('---- EQU')) {
         const equName = line.slice(9).split(/\s/)[0];
-  if (entry && entry.type !== 'SolEQU') { save(null, null, true, null); }
+        if (entry && entry.type !== 'SolEQU') { 
+          save(null, null, true, null); 
+        }
         save('SolEQU', null, false, {
           name: equName,
           line: lineno,
@@ -97,7 +113,9 @@ export default function dataParser(file: string): Promise<DataParserEntry[]> {
       } else if (line.includes('---- VAR')) {
         const varName = line.slice(9).split(/\s/)[0];
 
-  if (entry && entry.type !== 'SolVAR') { save(null, null, true, null); }
+        if (entry && entry.type !== 'SolVAR') { 
+          save(null, null, true, null); 
+        }
         save('SolVAR', null, false, {
           name: varName,
           line: lineno,
@@ -107,7 +125,9 @@ export default function dataParser(file: string): Promise<DataParserEntry[]> {
       } else if (/^(----)\s*\d/.test(line)) {
         const disTokens = line.split(/[\s]+/);
         const disName = disTokens[3] || '';
-  if (entry && entry.type !== 'Display') { save(null, null, true, null); }
+        if (entry && entry.type !== 'Display') { 
+          save(null, null, true, null); 
+        }
         save('Display', null, false, {
           name: disName,
           line: lineno,
