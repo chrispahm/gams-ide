@@ -37,30 +37,30 @@ export default async function getSymbolUnderCursor(args: GetSymbolArgs): Promise
   // Check if there is a word range
   if (wordRange) {
     // Get the text of the word
-  const word = document.getText(wordRange);    
+    const word = document.getText(wordRange);    
     const characterBeforeWord = wordRange.start.character ? document.getText(
       new vscode.Range(
         new vscode.Position(wordRange.start.line, wordRange.start.character - 1),
         new vscode.Position(wordRange.start.line, wordRange.start.character)
       )
     ) : "";
-    
-    // find the word in the reference tree
-  const referenceTree = state.get<ReferenceTree>('referenceTree');
-  const compileTimeVariables = state.get<CompileTimeVariable[]>('compileTimeVariables');
-  const solves = state.get<any>('solves');
+      
+      // find the word in the reference tree
+    const referenceTree = state.get<ReferenceTree>('referenceTree');
+    const compileTimeVariables = state.get<CompileTimeVariable[]>('compileTimeVariables');
+    const solves = state.get<any>('solves');
     // const position = editor.selection.active;
     const line = position.line;
     const column = position.character;
     const file = document.fileName;
 
-  let quotedElement = '';
-  let functionName = '';
-  let domain: (string | undefined)[] = [];
-  let domainIndex = 0;
+    let quotedElement = '';
+    let functionName = '';
+    let domain: (string | undefined)[] = [];
+    let domainIndex = 0;
 
-    // first, we try to find the reference in the reference tree without checking the AST
-  let matchingRef: (ReferenceSymbol | CompileTimeVariable) | undefined;
+      // first, we try to find the reference in the reference tree without checking the AST
+    let matchingRef: (ReferenceSymbol | CompileTimeVariable) | undefined;
     if (characterBeforeWord === "%") {
       matchingRef = compileTimeVariables?.find(
         (item) => item.name?.toLowerCase() === word?.toLowerCase()
@@ -77,7 +77,7 @@ export default async function getSymbolUnderCursor(args: GetSymbolArgs): Promise
     }
 
     const { text: lineText } = document.lineAt(line);
-  let ast: GamsLineAst | [] = [];
+    let ast: GamsLineAst | [] = [];
     try {
       ast = gamsParser.parse(lineText);
     } catch (error) {
@@ -85,18 +85,18 @@ export default async function getSymbolUnderCursor(args: GetSymbolArgs): Promise
     }
     if (ast) {
       // parse the line using the PEG parser      
-  const gamsSymbol = (ast as any).find((entry: any) =>
-      (entry && entry.name?.toString().toLowerCase().includes(word?.toLowerCase())
-        && entry.start <= column
-        && entry.end >= column
+      const gamsSymbol = ast.find((entry: any) =>
+        (entry && entry.name?.toString().toLowerCase().includes(word?.toLowerCase())
+          && entry.start <= column
+          && entry.end >= column
       ));
 
       if (gamsSymbol) {
         const functionRef = referenceTree?.find((item) => item.nameLo === gamsSymbol?.functionName?.toLowerCase());
         if (gamsSymbol.isQuoted) {
-          quotedElement = gamsSymbol.name;
+          quotedElement = gamsSymbol.name.toString();
         }
-        functionName = gamsSymbol.functionName;
+        functionName = gamsSymbol.functionName || '';
         domain = functionRef?.domain?.map(d => d.name) || [];
         domainIndex = gamsSymbol.index;
 
@@ -108,11 +108,11 @@ export default async function getSymbolUnderCursor(args: GetSymbolArgs): Promise
     
   if (matchingRef && (matchingRef as ReferenceSymbol).name && gamsView) {
       const data = {
-    ...matchingRef,
-    domain: (matchingRef as ReferenceSymbol).domain?.map(domain => ({ name: domain.name })),
-    subsets: (matchingRef as ReferenceSymbol).subsets?.map(subset => ({ name: subset.name })),
+        ...matchingRef,
+        domain: (matchingRef as ReferenceSymbol).domain?.map(domain => ({ name: domain.name })),
+        subsets: (matchingRef as ReferenceSymbol).subsets?.map(subset => ({ name: subset.name })),
         superset: {
-      name: (matchingRef as ReferenceSymbol).superset?.name
+          name: (matchingRef as ReferenceSymbol).superset?.name
         },
         quotedElement,
         functionName,
@@ -123,10 +123,10 @@ export default async function getSymbolUnderCursor(args: GetSymbolArgs): Promise
         historyCursorColumn: column + 1
       };
 
-    state.update('curSymbol', data);
+      state.update('curSymbol', data);
 
       // send data to webview
-  gamsView.webview.postMessage({
+      gamsView.webview.postMessage({
         command: "updateReference",
         data
       });
