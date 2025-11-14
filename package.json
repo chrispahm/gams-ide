@@ -545,7 +545,13 @@
           "name": ""
         }
       ]
-    }
+    },
+    "mcpServerDefinitionProviders": [
+      {
+        "id": "gamsMcpServerProvider",
+        "label": "GAMS MCP Server Provider"
+      }
+    ]
   },
   "main": "./out/extension.js",
   "scripts": {
@@ -561,6 +567,7 @@
     "@types/mocha": "^10.0.10",
     "@types/node": "22.x",
     "@types/vscode": "^1.103.0",
+    "@types/ws": "^8.18.1",
     "@typescript-eslint/eslint-plugin": "^8.39.0",
     "@typescript-eslint/parser": "^8.39.0",
     "@vscode/test-cli": "^0.0.11",
@@ -572,11 +579,15 @@
     "vue3-carousel": "^0.16.0"
   },
   "dependencies": {
+    "@duckdb/duckdb-wasm": "^1.30.1-dev2.0",
+    "@modelcontextprotocol/sdk": "^1.18.0",
     "@vscode/codicons": "^0.0.33",
     "glob": "^10.2.7",
     "lodash": "^4.17.21",
     "readline-specific": "^1.0.4",
-    "shelljs": "^0.8.5"
+    "shelljs": "^0.8.5",
+    "ws": "^8.18.3",
+    "zod": "^3.25.76"
   },
   "extensionDependencies": [
     "lolow.gams"
