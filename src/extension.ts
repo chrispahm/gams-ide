@@ -1,5 +1,3 @@
-// The module 'vscode' contains the VS Code extensibility API
-// Import the module and reference it with the alias vscode in your code below
 import * as vscode from 'vscode';
 import clearScrdir from "./utils/clearScrdir";
 import updateDiagnostics from "./diagnostics";
@@ -15,6 +13,7 @@ import { gamsIncludeExplorer } from "./createIncludeTree";
 import registerIncludeTreeCommands from "./registerIncludeTreeCommands";
 import State from "./State.js";
 import { ReferenceSymbol } from "./types/gams-symbols";
+import { startHttpServer } from "./httpServer";
 
 let terminal: vscode.Terminal;
 let gamsView: vscode.WebviewView | undefined;
@@ -40,6 +39,8 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
 	terminal = createOrFindTerminal();
 
 	const state = new State();
+	// start the HTTP server
+	const httpServerPort = await startHttpServer(state);
 	// start listening to save events to generate diagnostics
 	const collection = vscode.languages.createDiagnosticCollection("gams");
 
@@ -127,6 +128,31 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
 	// add LSP features
 	implementLSPMethods(context, state);
 
+	// add the MCP server
+	const didChangeEmitter = new vscode.EventEmitter<void>();
+
+	context.subscriptions.push(vscode.lm.registerMcpServerDefinitionProvider('gamsMcpServerProvider', {
+		onDidChangeMcpServerDefinitions: didChangeEmitter.event,
+		provideMcpServerDefinitions: async () => {
+			let servers: vscode.McpServerDefinition[] = [];
+
+			// Example of a simple stdio server definition
+			servers.push(new vscode.McpStdioServerDefinition(
+					'gamsMcpServer',
+					'node',
+					['src/mcp/server.ts'],
+					{ API_SERVER_PORT: String(httpServerPort) }
+			));
+
+			return servers;
+		},
+		resolveMcpServerDefinition: async (server: vscode.McpServerDefinition) => {
+			// Return undefined to indicate that the server should not be started or throw an error
+			// If there is a pending tool call, the editor will cancel it and return an error message
+			// to the language model.
+			return server;
+		}
+	}));
 	// add commands    
 	// register a command to get the symbol under the cursor
 	context.subscriptions.push(
