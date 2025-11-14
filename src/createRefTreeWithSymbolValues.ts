@@ -42,7 +42,7 @@ export default async function createRefTreeWithSymbolValues(options: CreateRefTr
   
   dataProgress.report({ message: "Executing DMP" });
   const lst = await execDMP(dumpFile, { scratchdir, gamsexe, filePath, cancellationToken });
-  // if the request is cancelled, the will be no lst
+  // if the request is cancelled, there will be no lst
   // return silently
   if (!lst) {
     return;
