@@ -15,10 +15,10 @@ const server = new McpServer({
   capabilities: {
     resources: {},
     tools: {
-      find_symbol: {
-        name: "find_symbol",
-        title: "Find Symbol",
-        description: "Find a symbol / list of symbols that best match a user query. E.g. 'What is the parameter that drives crop prices?' -> ['p_cropprice']",
+      search_gams_symbols: {
+        name: "search_gams_symbols",
+        title: "Search GAMS Symbols",
+        description: "Semantically search for GAMS symbols (sets, parameters, variables, equations) based on a natural language query. Use this to find relevant symbols when you don't know the exact name.",
         inputSchema: {
           type: "object",
           properties: {
@@ -43,10 +43,10 @@ const server = new McpServer({
           required: ["symbols"]
         }
       },
-      get_symbol_info: {
-        name: "get_symbol_info",
-        title: "Get Symbol Info",
-        description: "Get detailed information about one or more GAMS symbols from the compiler's reference tree.",
+      get_symbol_details: {
+        name: "get_symbol_details",
+        title: "Get Symbol Details",
+        description: "Retrieve detailed static analysis information for specific GAMS symbols, including type, description, domain, and declaration/definition locations.",
         inputSchema: {
           type: "object",
           properties: {
@@ -73,11 +73,11 @@ const server = new McpServer({
           required: ["symbols"],
         },
       },
-      get_symbol_data: {
-        name: "get_symbol_data",
-        title: "Get Symbol Data",
+      get_symbol_values: {
+        name: "get_symbol_values",
+        title: "Get Symbol Values",
         description:
-          "Get the current data for one or more GAMS symbols from the data store.",
+          "Retrieve the actual data values for specific GAMS symbols from the latest execution results.",
         inputSchema: {
           type: "object",
           properties: {
@@ -110,7 +110,7 @@ const server = new McpServer({
         name: "get_reference_tree",
         title: "Get Reference Tree",
         description:
-          "Get the reference tree for the current GAMS code as CSV rows.",
+          "Get the full symbol reference tree as CSV. WARNING: This can be very large. Prefer using 'search_gams_symbols' or 'get_symbol_details' unless you need a global view of all symbols.",
         inputSchema: {
           type: "object",
           properties: {},
@@ -127,11 +127,11 @@ const server = new McpServer({
           required: ["csv"],
         },
       },
-      update_diagnostics: {
-        name: "update_diagnostics",
-        title: "Update Diagnostics",
+      check_syntax_errors: {
+        name: "check_syntax_errors",
+        title: "Check Syntax Errors",
         description:
-          "Trigger an update of diagnostics in the GAMS IDE extension, optionally for a specific file.",
+          "Trigger a syntax check and update diagnostics for the current GAMS file or workspace. Use this to validate code changes.",
         inputSchema: {
           type: "object",
           properties: {
@@ -152,11 +152,11 @@ const server = new McpServer({
           required: ["ok"],
         },
       },
-      gams_execution_command: {
-        name: "gams_execution_command",
-        title: "GAMS Execution Command",
+      get_gams_execution_command: {
+        name: "get_gams_execution_command",
+        title: "Get GAMS Execution Command",
         description:
-          "Returns the full GAMS execution command (executable and arguments) for a file or the configured main GMS file.",
+          "Get the command line string required to execute a GAMS model, including all configured arguments and paths. Does not execute the command.",
         inputSchema: {
           type: "object",
           properties: {
@@ -189,11 +189,11 @@ const server = new McpServer({
           required: ["gamsExe", "gamsArgs", "listingPath", "gamsFile", "filePath"],
         },
       },
-      gams_compile_command: {
-        name: "gams_compile_command",
-        title: "GAMS Compile Command",
+      get_gams_compile_command: {
+        name: "get_gams_compile_command",
+        title: "Get GAMS Compile Command",
         description:
-          "Returns the full GAMS compile command (executable and arguments) for a file or the configured main GMS file.",
+          "Get the command line string required to compile a GAMS model. Does not execute the command.",
         inputSchema: {
           type: "object",
           properties: {
@@ -226,11 +226,11 @@ const server = new McpServer({
           required: ["gamsExe", "gamsArgs", "listingPath", "gamsFile", "filePath"],
         },
       },
-      filter_listing_file: {
-        name: "filter_listing_file",
-        title: "Filter Listing File",
+      read_listing_file_for_symbols: {
+        name: "read_listing_file_for_symbols",
+        title: "Read Listing File for Symbols",
         description:
-          "Extract specific information about a symbol or list of symbols from a GAMS listing file.",
+          "Read and extract specific symbol information (values, equation listings) from a GAMS listing (.lst) file.",
         inputSchema: {
           type: "object",
           properties: {
@@ -282,8 +282,8 @@ function returnError(message: string) {
 
 // @ts-ignore - suppress unused warning
 server.tool(
-  "find_symbol",
-  'Find a symbol / list of symbols that best match a user query. E.g. "What is the parameter that drives crop prices?" -> ["p_cropprice"]',
+  "search_gams_symbols",
+  'Semantically search for GAMS symbols (sets, parameters, variables, equations) based on a natural language query. Use this to find relevant symbols when you don\'t know the exact name.',
   {
     query: z.array(z.string()).describe("List of GAMS symbols to get information about (case insensitive)."),
   },
@@ -321,8 +321,8 @@ server.tool(
 
 // @ts-ignore - suppress unused warning
 server.tool(
-  "get_symbol_info",
-  "Get all information about one or more GAMS symbols from the compiler's reference tree.",
+  "get_symbol_details",
+  "Retrieve detailed static analysis information for specific GAMS symbols, including type, description, domain, and declaration/definition locations.",
   {
     symbols: z
       .array(z.string())
@@ -381,8 +381,8 @@ server.tool(
 
 // @ts-ignore - suppress unused warning
 server.tool(
-  "get_symbol_data",
-  "Get the current data for one or more GAMS symbols from the data store.",
+  "get_symbol_values",
+  "Retrieve the actual data values for specific GAMS symbols from the latest execution results.",
   {
     symbols: z
       .array(z.string())
@@ -441,7 +441,7 @@ server.tool(
 // @ts-ignore - suppress unused warning
 server.tool(
   "get_reference_tree",
-  "Get the reference tree for the current GAMS code as CSV rows.",
+  "Get the full symbol reference tree as CSV. WARNING: This can be very large. Prefer using 'search_gams_symbols' or 'get_symbol_details' unless you need a global view of all symbols.",
   {},
   async () => {
     try {
@@ -472,8 +472,8 @@ server.tool(
 
 // @ts-ignore - suppress unused warning
 server.tool(
-  "update_diagnostics",
-  "Trigger an update of diagnostics in the GAMS IDE extension.",
+  "check_syntax_errors",
+  "Trigger a syntax check and update diagnostics for the current GAMS file or workspace. Use this to validate code changes.",
   {
     file: z
       .string()
@@ -528,8 +528,8 @@ server.tool(
 
 // @ts-ignore - suppress unused warning
 server.tool(
-  "gams_execution_command",
-  "Returns the full GAMS execution command (executable and arguments) for a file or the configured main GMS file.",
+  "get_gams_execution_command",
+  "Get the command line string required to execute a GAMS model, including all configured arguments and paths. Does not execute the command.",
   {
     file: z
       .string()
@@ -590,8 +590,8 @@ server.tool(
 
 // @ts-ignore - suppress unused warning
 server.tool(
-  "gams_compile_command",
-  "Returns the full GAMS compile command (executable and arguments) for a file or the configured main GMS file.",
+  "get_gams_compile_command",
+  "Get the command line string required to compile a GAMS model. Does not execute the command.",
   {
     file: z
       .string()
@@ -652,8 +652,8 @@ server.tool(
 
 // @ts-ignore - suppress unused warning
 server.tool(
-  "filter_listing_file",
-  "Extract specific information about a symbol or list of symbols from a GAMS listing file.",
+  "read_listing_file_for_symbols",
+  "Read and extract specific symbol information (values, equation listings) from a GAMS listing (.lst) file.",
   {
     lstFilePath: z
       .string()
