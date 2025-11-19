@@ -1,4 +1,4 @@
-import * as vscode from 'vscode';
+// import * as vscode from 'vscode';
 import * as readline from 'readline';
 import * as fs from 'fs';
 import { LstEntry, LstEntryChild } from './types/gams-symbols';
@@ -20,10 +20,10 @@ export default function listingParser(file: string): Promise<LstEntry[]> {
       crlfDelay: Infinity
     });
 
-  const ast: LstEntry[] = [];
-  let entry: LstEntry | null | undefined;
+    const ast: LstEntry[] = [];
+    let entry: LstEntry | null | undefined;
     let lineno = 0;
-    const defaultSettings = vscode.workspace.getConfiguration("gamsIde");
+    // const defaultSettings = vscode.workspace.getConfiguration("gamsIde");
 
     function save(type: string | null, pos: number[][] | null, push: boolean, entries: LstEntryChild | null) {
       if (!entry) {
@@ -38,34 +38,56 @@ export default function listingParser(file: string): Promise<LstEntry[]> {
         entry.file = file;
       }
       if (entries) {
+        // add endLine to each previous entry, which is the line property of the current entry        
         if (entry.entries) {
+          entry.entries[entry.entries.length - 1].endLine = entries.line - 1;
           entry.entries.push(entries);
           entry.open = true;
-          const unfoldThreshold = defaultSettings.get<number>('autoUnfoldListingEntriesTreshold');
-          if (entry.entries.length > (unfoldThreshold ?? Number.MAX_SAFE_INTEGER)) {
-            entry.open = false;
-          }
-          const onlyDisplay = defaultSettings.get<boolean>('onlyAutoUnfoldDisplayStatements');
-          if (onlyDisplay && type !== 'Display') {
-            entry.open = false;
-          }
+          // const unfoldThreshold = defaultSettings.get<number>('autoUnfoldListingEntriesTreshold');
+          // if (entry.entries.length > (unfoldThreshold ?? Number.MAX_SAFE_INTEGER)) {
+          //   entry.open = false;
+          // }
+          //const onlyDisplay = defaultSettings.get<boolean>('onlyAutoUnfoldDisplayStatements');
+          //if (onlyDisplay && type !== 'Display') {
+          //  entry.open = false;
+          //}
         } else {
           entry.entries = [entries];
         }
       }
       if (push) {
+        if (entry && entry.entries && entry.entries.length > 0) {
+          // also add final endLine to last child entry
+          entry.entries[entry.entries.length - 1].endLine = lineno - 1;
+        }
+        if (entry && entry.type.includes('Solution Report')) {
+          entry.endLine = [ lineno - 1 ];
+        }
         ast.push(entry);
         entry = null;
       }
     }
 
-  rl.on('line', (line: string) => {
+    rl.on('line', (line: string) => {
       lineno++;
 
       if ((/^(\*\*\*\*)\s*\d\d/).test(line)) {
         const match = line.match(/(\*\*\*\*)\s*(.*)/);
         const errorMessage = match ? match[2] : 'Error';
         save("Error: " + errorMessage, [
+          [lineno],
+          [0]
+        ], true, null);
+      } else if ((/^(\*\*\*\*)\s*\w/).test(line)) {
+        // ignore if previous entry was "Solution Report"
+        if (entry && entry.type.includes('Solution Report')) {
+          return;
+        }
+        if (entry) {
+          save(null, null, true, null);
+        }
+        const match = line.match(/^(\*\*\*\*)\s*((?:(?!\s{3,}|:).)*)(?=\s{3,}|:|$)/);
+        save(match?.[2] ?? '', [
           [lineno],
           [0]
         ], true, null);
@@ -123,9 +145,9 @@ export default function listingParser(file: string): Promise<LstEntry[]> {
         save(line, [
           [lineno],
           [0]
-        ], true, null);
+        ], false, null);
       } else if (line.includes('---- EQU')) {
-  const equName = line.slice(9).split(/\s/)[0];
+        const equName = line.slice(9).split(/\s/)[0];
         if (entry && entry.type !== 'SolEQU') {
           save(null, null, true, null);
         }
@@ -136,7 +158,7 @@ export default function listingParser(file: string): Promise<LstEntry[]> {
           file: file
         });
       } else if (line.includes('---- VAR')) {
-  const varName = line.slice(9).split(/\s/)[0];
+        const varName = line.slice(9).split(/\s/)[0];
 
         if (entry && entry.type !== 'SolVAR') {
           save(null, null, true, null);
@@ -151,14 +173,14 @@ export default function listingParser(file: string): Promise<LstEntry[]> {
         if (entry) {
           save(null, null, true, null);
         }
-  const abortParam = line.split('Execution halted: abort ')[1];
-  const abortLine = getAbortLine(abortParam, lineno, ast);
+        const abortParam = line.split('Execution halted: abort ')[1];
+        const abortLine = getAbortLine(abortParam, lineno, ast);
         save('Abort', [
           [abortLine],
           [0]
         ], true, null);
       } else if (/^(----)\s*\d/.test(line)) {
-  const disName = line.split(/[\s]+/)[3];
+        const disName = line.split(/[\s]+/)[3];
         if (entry && entry.type !== 'Display') {
           save(null, null, true, null);
         }
@@ -169,7 +191,7 @@ export default function listingParser(file: string): Promise<LstEntry[]> {
           file: file
         });
       } else if (entry && /^(----)/.test(line) && entry.type.includes('Equation Listing')) {
-  const equLst = line.split(/[\s]+/)[1];
+        const equLst = line.split(/[\s]+/)[1];
         // if (entry && entry.type !== 'Display') save(null, null, true, null)
         save(null, null, false, {
           name: equLst,
@@ -178,7 +200,7 @@ export default function listingParser(file: string): Promise<LstEntry[]> {
           file: file
         });
       } else if (entry && /^(----)/.test(line) && entry.type.includes('Column Listing')) {
-  const colLst = line.split(/[\s]+/)[1];
+        const colLst = line.split(/[\s]+/)[1];
         // if (entry && entry.type !== 'Display') save(null, null, true, null)
         save(null, null, false, {
           name: colLst,
@@ -189,7 +211,7 @@ export default function listingParser(file: string): Promise<LstEntry[]> {
       }
     });
 
-  rl.on('close', () => {
+    rl.on('close', () => {
       // save last time to get displays after solve
       if (entry) {
         save(null, null, true, null);

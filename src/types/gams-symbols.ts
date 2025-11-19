@@ -56,6 +56,7 @@ export type GamsLineAst = GamsFunctionCallArg[];
 export interface LstEntryChild {
   name: string;
   line: number;
+  endLine?: number;
   column: number;
   file: string;
 }
