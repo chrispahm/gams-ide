@@ -138,10 +138,10 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
 
 			// Example of a simple stdio server definition
 			servers.push(new vscode.McpStdioServerDefinition(
-					'gamsMcpServer',
-					'node',
-					['src/mcp/server.ts'],
-					{ API_SERVER_PORT: String(httpServerPort) }
+				'gamsMcpServer',
+				'node',
+				[context.asAbsolutePath('out/mcp/server.js')],
+				{ API_SERVER_PORT: String(httpServerPort) }
 			));
 
 			return servers;
@@ -150,6 +150,7 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
 			// Return undefined to indicate that the server should not be started or throw an error
 			// If there is a pending tool call, the editor will cancel it and return an error message
 			// to the language model.
+			console.log('Resolving MCP server definition:', server);
 			return server;
 		}
 	}));
