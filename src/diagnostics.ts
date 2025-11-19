@@ -66,7 +66,7 @@ export default async function updateDiagnosticsWithProgrss(args: UpdateDiagnosti
     progress.report({ increment: 0 });
     (args as UpdateDiagnosticsArgs).progress = progress;
     await updateDiagnostics(args);
-    progress.report({ increment: 100 });    
+    progress.report({ increment: 100 });
   });
 };
 
@@ -105,7 +105,7 @@ async function updateDiagnostics(args: UpdateDiagnosticsArgs): Promise<void> {
       // show error in VS Code output
       await vscode.window.showErrorMessage("GAMS compilation failed: " + command);
       return;
-  } else if (res.error) {
+    } else if (res.error) {
       // show error in VS Code output
       // vscode.window.showErrorMessage("GAMS compilation failed: Check the GAMS output in the terminal");
       // terminal?.show(true);
@@ -221,7 +221,7 @@ async function updateDiagnostics(args: UpdateDiagnosticsArgs): Promise<void> {
       let errors = errorFileContents.split(/\r\n?|\n/).slice(1);
       // get max errors to display from settings
       const maxErrorsToDisplay = vscode.workspace.getConfiguration('gamsIde').get<number>('maxErrorsToDisplay');
-  if ((maxErrorsToDisplay ?? 0) > 0) {
+      if ((maxErrorsToDisplay ?? 0) > 0) {
         errors = errors.slice(0, maxErrorsToDisplay);
       }
       const errorMessages: ParsedErrorMessage[] = await Promise.all(
