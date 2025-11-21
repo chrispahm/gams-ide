@@ -46,7 +46,7 @@ const server = new McpServer({
       get_symbol_details: {
         name: "get_symbol_details",
         title: "Get Symbol Details",
-        description: "Retrieve detailed static analysis information for specific GAMS symbols, including type, description, domain, and declaration/definition locations.",
+        description: "Retrieve detailed static analysis information for specific GAMS symbols, including type, description, domain, declaration/definition/control locations, AND all references/assignments (read/write usages).",
         inputSchema: {
           type: "object",
           properties: {
@@ -106,11 +106,57 @@ const server = new McpServer({
           required: ["symbols"],
         },
       },
+      get_model_structure: {
+        name: "get_model_structure",
+        title: "Get Model Structure",
+        description: "Get the hierarchy of included files (the 'include tree') for the main GAMS file. Use this to understand file dependencies and execution order.",
+        inputSchema: {
+          type: "object",
+          properties: {},
+          additionalProperties: false,
+        },
+        outputSchema: {
+          type: "object",
+          properties: {
+            structure: {
+              type: "object",
+              description: "The include tree structure.",
+            },
+          },
+          required: ["structure"],
+        },
+      },
+      get_solve_status: {
+        name: "get_solve_status",
+        title: "Get Solve Status",
+        description: "Get the Model Status and Solver Status from the listing file (e.g. Optimal, Infeasible). Use this to quickly check if the model solved successfully.",
+        inputSchema: {
+          type: "object",
+          properties: {
+            lstFilePath: {
+              type: "string",
+              description: "Absolute path to the .lst file.",
+            },
+          },
+          required: ["lstFilePath"],
+          additionalProperties: false,
+        },
+        outputSchema: {
+          type: "object",
+          properties: {
+            status: {
+              type: "string",
+              description: "The solution report section from the listing file.",
+            },
+          },
+          required: ["status"],
+        },
+      },
       get_reference_tree: {
         name: "get_reference_tree",
         title: "Get Reference Tree",
         description:
-          "Get the full symbol reference tree as CSV. WARNING: This can be very large. Prefer using 'search_gams_symbols' or 'get_symbol_details' unless you need a global view of all symbols.",
+          "Get the full symbol reference tree as CSV. Use this tool when you need a global view of all symbols.",
         inputSchema: {
           type: "object",
           properties: {},
@@ -156,7 +202,7 @@ const server = new McpServer({
         name: "get_gams_execution_command",
         title: "Get GAMS Execution Command",
         description:
-          "Get the command line string required to execute a GAMS model, including all configured arguments and paths. Does not execute the command.",
+          "Get the command line string required to execute a GAMS model, including all configured arguments and paths. Use the returned command string with the `runInTerminal` tool to execute the model and see the log output.",
         inputSchema: {
           type: "object",
           properties: {
@@ -230,7 +276,7 @@ const server = new McpServer({
         name: "read_listing_file_for_symbols",
         title: "Read Listing File for Symbols",
         description:
-          "Read and extract specific symbol information (values, equation listings) from a GAMS listing (.lst) file.",
+          "Read and extract specific symbol information (values, equation listings, solution reports) from a GAMS listing (.lst) file. Use this to debug generated algebra or check results.",
         inputSchema: {
           type: "object",
           properties: {
