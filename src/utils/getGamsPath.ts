@@ -1,7 +1,16 @@
 import * as vscode from 'vscode';
-import { which } from 'shelljs';
 import { glob, globSync } from 'glob';
 import * as os from 'os';
+import * as cp from 'child_process';
+
+function which(command: string): string | null {
+  try {
+    const result = cp.execSync(os.platform() === 'win32' ? `where ${command}` : `which ${command}`, { encoding: 'utf8' });
+    return result.trim().split('\n')[0];
+  } catch (e) {
+    return null;
+  }
+}
 
 export default async function getGamsPath(): Promise<string | undefined> {
   const defaultSettings = vscode.workspace.getConfiguration("gamsIde");
