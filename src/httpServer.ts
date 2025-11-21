@@ -89,6 +89,14 @@ export async function startHttpServer(state: State): Promise<number> {
         return;
       }
 
+      // GET /model-structure -> returns the parsed include tree
+      if (method === 'GET' && path === '/model-structure') {
+        const parsedIncludes = state.get('parsedIncludes') || [];
+        res.writeHead(200, { 'Content-Type': 'application/json; charset=utf-8' });
+        res.end(JSON.stringify(parsedIncludes));
+        return;
+      }
+
       // POST /gams-execution-command { file?: string, extraArgs?: string[] }
       // -> returns the command and arguments to execute a GAMS model
       if (method === 'POST' && path === '/gams-execution-command') {
@@ -128,7 +136,7 @@ export async function startHttpServer(state: State): Promise<number> {
         return;
       }
 
-      // POST /filter-listing { lstFilePath: string, symbols: string | string[] }
+      // POST /filter-listing { lstFilePath: string, symbols: string | string[], entryType?: string }
       // -> filters the listing file by the given symbols and returns the summary content
       if (method === 'POST' && path === '/filter-listing') {
         let body = '';
@@ -143,6 +151,7 @@ export async function startHttpServer(state: State): Promise<number> {
             const parsed = body ? JSON.parse(body) : {};
             const lstFilePath = typeof parsed?.lstFilePath === 'string' ? parsed.lstFilePath : undefined;
             const rawSymbols = parsed?.symbols;
+            const entryType = typeof parsed?.entryType === 'string' ? parsed.entryType : undefined;
 
             if (!lstFilePath) {
               res.writeHead(400, { 'Content-Type': 'application/json; charset=utf-8' });
@@ -164,11 +173,14 @@ export async function startHttpServer(state: State): Promise<number> {
             } else if (typeof rawSymbols === 'string') {
               symbols = rawSymbols;
             } else {
-              res.writeHead(400, { 'Content-Type': 'application/json; charset=utf-8' });
-              res.end(JSON.stringify({ error: 'Missing symbols' }));
-              return;
+              if (!entryType) {
+                res.writeHead(400, { 'Content-Type': 'application/json; charset=utf-8' });
+                res.end(JSON.stringify({ error: 'Missing symbols' }));
+                return;
+              }
+              symbols = [];
             }
-            const summaryContent = await filterListing(lstFilePath, symbols);
+            const summaryContent = await filterListing(lstFilePath, symbols, entryType);
             res.writeHead(200, { 'Content-Type': 'application/json; charset=utf-8' });
             res.end(JSON.stringify({ summaryContent }));
           } catch (e: any) {
@@ -290,7 +302,7 @@ function prepareReferenceTree(referenceTree: any[], options = {
     'defined_line',
     'defined_column',
     'defined_file',
-    'data'
+    'data',
   ] as const;
 
   const toNameLo = (sym: any): string => {
@@ -361,6 +373,7 @@ function prepareReferenceTree(referenceTree: any[], options = {
       const data = sym?.data;
 
       const row: Record<(typeof headers)[number], unknown> = {
+        ...sym,
         name: typeof sym?.name === 'string' ? sym.name : '',
         nameLo: toNameLo(sym),
         type: typeof sym?.type === 'string' ? sym.type : '',
