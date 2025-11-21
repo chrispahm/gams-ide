@@ -10,7 +10,7 @@
   "license": "MIT",
   "publisher": "chrispahm",
   "engines": {
-    "vscode": "^1.70.0"
+    "vscode": "^1.103.0"
   },
   "categories": [
     "Other"
@@ -555,9 +555,10 @@
   },
   "main": "./out/extension.js",
   "scripts": {
-    "vscode:prepublish": "npm run compile",
-    "compile": "cp src/utils/compile.gms out/utils/compile.gms && tsc -p ./",
-    "watch": "tsc -watch -p ./",
+    "vscode:prepublish": "npm run esbuild-base -- --production",
+    "esbuild-base": "node esbuild.js",
+    "compile": "npm run esbuild-base",
+    "watch": "npm run esbuild-base -- --watch",
     "pretest": "npm run compile && npm run lint",
     "lint": "eslint src",
     "test": "vscode-test"
@@ -572,6 +573,7 @@
     "@typescript-eslint/parser": "^8.39.0",
     "@vscode/test-cli": "^0.0.11",
     "@vscode/test-electron": "^2.5.2",
+    "esbuild": "^0.27.0",
     "eslint": "^9.32.0",
     "peggy": "^5.0.6",
     "typescript": "^5.9.2",
