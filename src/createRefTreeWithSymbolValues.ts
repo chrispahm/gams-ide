@@ -2,7 +2,7 @@ import * as vscode from 'vscode';
 import * as readline from 'readline';
 import * as fs from 'fs';
 import * as path from 'path';
-import * as shell from 'shelljs';
+import * as cp from 'child_process';
 import State from './State';
 import { ReferenceTree, SolveStatement, SymbolDataStore } from './types/gams-symbols';
 
@@ -135,11 +135,9 @@ function execDMP(
       resolve('');
       return;
     }
-    // @ts-ignore
-    shell.cd(config.scratchdir);
-    // @ts-ignore
-    const child = shell.exec(gamsParams, { silent: true }, (code: number, stdout: string, stderr: string) => {
-      if (code !== 0) {
+
+    const child = cp.exec(gamsParams, { cwd: config.scratchdir }, (error, stdout, stderr) => {
+      if (error) {
         console.log('Error in dmp exec: ' + stdout, stderr);
       }
       resolve(listingPath);

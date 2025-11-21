@@ -27,14 +27,14 @@ async function main() {
 
   // Copy compile.gms
   const srcCompile = path.join(__dirname, "src/utils/compile.gms");
-  const destCompileDir = path.join(__dirname, "out/utils");
+  const destCompileDir = path.join(__dirname, "out");
   const destCompile = path.join(destCompileDir, "compile.gms");
   
   if (!fs.existsSync(destCompileDir)){
       fs.mkdirSync(destCompileDir, { recursive: true });
   }
   fs.copyFileSync(srcCompile, destCompile);
-  console.log("Copied compile.gms to out/utils/compile.gms");
+  console.log("Copied compile.gms to out/compile.gms");
 
   if (watch) {
     await ctx.watch();
