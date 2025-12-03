@@ -136,10 +136,11 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
 		provideMcpServerDefinitions: async () => {
 			let servers: vscode.McpServerDefinition[] = [];
 
-			// Example of a simple stdio server definition
+			// Use the same Node.js executable that's running the extension
+			// This avoids requiring users to have node in their PATH
 			servers.push(new vscode.McpStdioServerDefinition(
 				'gamsMcpServer',
-				'node',
+				process.execPath,
 				[context.asAbsolutePath('out/mcp/server.js')],
 				{ API_SERVER_PORT: String(httpServerPort) }
 			));
