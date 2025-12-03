@@ -244,13 +244,19 @@ export async function startHttpServer(state: State): Promise<number> {
         req.on('end', async () => {
           try {
             const parsed = body ? JSON.parse(body) : {};
-            const query = typeof parsed?.query === 'string' ? parsed.query : undefined;
+            const rawQuery = parsed;
+            let query: string | undefined;
+            if (Array.isArray(rawQuery)) {
+              query = rawQuery.filter((p) => typeof p === 'string').join(' ').trim() || undefined;
+            } else if (typeof rawQuery === 'string') {
+              query = rawQuery;
+            }
             if (!query) {
               res.writeHead(400, { 'Content-Type': 'application/json; charset=utf-8' });
               res.end(JSON.stringify({ error: 'Missing query' }));
               return;
             }
-            const result = await runLLMQuery(state as any, query);
+            const result = await runLLMQuery(state, query);
             res.writeHead(200, { 'Content-Type': 'application/json; charset=utf-8' });
             res.end(JSON.stringify(result));
           } catch (e: any) {
@@ -400,12 +406,11 @@ function prepareReferenceTree(referenceTree: any[], options = {
   }
 }
 
-async function runLLMQuery(state: any, query: string): Promise<any> {
+async function runLLMQuery(state: State, query: string): Promise<any> {
   if (!(vscode as any).lm) {return { error: 'Language model API not available' };}
 
   let symbols: string[] = [];
-  symbols = state.symbols
-    .map((d: ReferenceSymbol) => `${typeMapping[d.type as keyof typeof typeMapping] ? typeMapping[d.type as keyof typeof typeMapping] + ": " : ""}${d.nameLo}, ${d.description}`);
+  symbols = state.get<ReferenceSymbol[]>("referenceTree")?.map((d: ReferenceSymbol) => `${typeMapping[d.type as keyof typeof typeMapping] ? typeMapping[d.type as keyof typeof typeMapping] + ": " : ""}${d.nameLo}, ${d.description}`) || [];
 
   const [model] = await vscode.lm.selectChatModels({
     vendor: 'copilot',
@@ -424,10 +429,11 @@ async function runLLMQuery(state: any, query: string): Promise<any> {
     "preferably answer with the user's intended meaning. Answer with just a JSON array of symbol name(s) and nothing else. " +
     "Here's the user query:";
 
+  
   const messages = [
     vscode.LanguageModelChatMessage.User(FIND_SYMBOLS_PROMPT),
     vscode.LanguageModelChatMessage.User(query),
-    vscode.LanguageModelChatMessage.User(`Symbols:\n${symbols.join('\n')}`)
+    vscode.LanguageModelChatMessage.User(`Symbols:\n${symbols?.join('\n')}`)
   ];
 
   let chatResponse = await model.sendRequest(
@@ -437,7 +443,7 @@ async function runLLMQuery(state: any, query: string): Promise<any> {
   );
 
   const stringResponse = await accumulateResponse(chatResponse);
-
+  
   let parsed: any;
   try {
     parsed = JSON.parse(stringResponse);
