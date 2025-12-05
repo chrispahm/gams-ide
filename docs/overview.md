@@ -83,4 +83,4 @@ To get the most out of the GAMS-IDE Extension, start by reviewing a few introduc
 
 - [Setup](/setup/installation) - Install VS Code, GAMS, and the GAMS-IDE extension for your platform.
 - [Configuration](/configuration/settings) - Configure the GAMS-IDE extension to your needs.
-- [Migration](/migration) - Migrate from GAMS Studio to GAMS-IDE.
+- [Migration](/migration/from-gams-studio) - Migrate from GAMS Studio to GAMS-IDE.
