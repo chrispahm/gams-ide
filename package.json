@@ -561,6 +561,9 @@
     "watch": "npm run esbuild-base -- --watch",
     "pretest": "npm run compile && npm run lint",
     "lint": "eslint src",
+    "docs:dev": "vitepress dev docs",
+    "docs:build": "vitepress build docs",
+    "docs:serve": "vitepress serve docs",
     "test": "vscode-test"
   },
   "devDependencies": {
