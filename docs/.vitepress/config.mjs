@@ -20,7 +20,8 @@ export default defineConfig({
       {
         text: 'Guide',
         items: [
-          { text: 'Installation', link: '/overview' },
+          { text: 'Overview', link: '/overview' },
+          { text: 'Setup', link: '/setup/installation' },
           { 
             text: 'Configuration',  
             items: [
@@ -33,7 +34,7 @@ export default defineConfig({
                 link: '/configuration/main-gms-file'
               },
               {
-                text: "Data panel",
+                text: "Data Panel",
                 link: '/configuration/data-panel'
               }
             ]
@@ -68,15 +69,15 @@ export default defineConfig({
                 link: '/usage/overview'
               },
               {
-                text: "Compiling and executing GAMS",
+                text: "Compiling and Executing GAMS",
                 link: '/usage/compiling-and-executing-gams'
               },
               {
-                text: "Finding compilation errors",
+                text: "Finding Compilation Errors",
                 link: '/usage/finding-compilation-errors'
               },
               {
-                text: "Using the GAMS References sidebar",
+                text: "Using the GAMS References Sidebar",
                 link: '/usage/gams-references-sidebar'
               },
               {
@@ -84,7 +85,7 @@ export default defineConfig({
                 link: '/usage/gams-data-panel'
               },
               {
-                text: "Switching main GMS files",
+                text: "Switching between Main GMS files",
                 link: '/usage/switching-main-gms-files'
               }
             ]

@@ -1,15 +1,6 @@
+out
+dist
 node_modules
 .vscode-test/
 *.vsix
-*.dat
-*.dmp
-*.log
-*.gdx
-*.err
-*.lst
-*.err
 scrdir/*
-docs/.vitepress/cache
-docs/.vitepress/dist
-dist/*
-!dist/compile.gms

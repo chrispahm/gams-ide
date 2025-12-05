@@ -10,10 +10,13 @@ a sidebar for symbol investigation/navigation, and a symbol panel. Also supports
 ![gams-ide](https://github.com/chrispahm/linter-gams/assets/20703207/1a615b3c-1908-48fe-ab9c-a7497c91b8f8)
 
 ## Installation
+
 You can download the latest version of the package from the [releases page](https://github.com/chrispahm/gams-ide/releases) and install it manually by opening the command palette (`ctrl-shift-p`) and typing `Extensions: Install from VSIX...`. Then select the downloaded file.
 
 ## Configuration
+
 ### Global configuration
+
 <img width="634" alt="gams-ide settings" src="https://github.com/chrispahm/linter-gams/assets/20703207/d25efc31-c6a7-4567-8206-9c70658a70e8">
 
 In order to function properly, gams-ide needs a valid GAMS executable. It will check for the latest GAMS version found in the PATH variable and the default install directories (Win: `C:/GAMS/*/*/`, `N:/soft/GAMS*/`, OSX: `/Applications/GAMS*/sysdir/`, `/Applications/GAMS*/Resource/sysdir/`).
@@ -28,6 +31,7 @@ gams-ide will ask you to install the GAMS language grammar extension if you have
 If you work on a GGIG project (CAPRI / FARMDYN), make sure you add the `trunk` folder (the one containing the `gams` and `GUI` folder) of your checkout as your Project Folder in Atom (`ctrl-shift-a` or File -> Add Project Folder...).
 
 ### Error underlining / linting
+
 <img width="577" alt="image" src="https://github.com/chrispahm/linter-gams/assets/20703207/c5352203-a9f9-4d50-9b4e-818533d5c529">
 
 Note that by default, only the first error will be displayed, as typically subsequent errors may be resulting from that first error. Also note that errors will only be shown in active files -> if you work on a file which is currently not enabled (e.g. due to GUI settings in GGIG projects) no error checking will be done on that file.
@@ -47,6 +51,7 @@ You can also search for a symbol with the searchbar shown at the upper part of t
 Now you can drag the GMS extension to the right sidebar.
 
 ### Symbol panel
+
 ![Symbol panel](https://github.com/chrispahm/linter-gams/assets/20703207/8acd6e9c-9d16-4e5c-be19-f8d156ec7ae3)
 
 Values of sets and paramters, as well as the equation listing for equations or the column listing for variables can be shown with the symbol panel feature. In order to activate, turn on the configuration in the `gams-ide` configuration panel, open the bottom dock and then click on a GAMS symbol (as shown in the GIF above). The symbol panel feature will parse your GAMS file for solve statements, and will try to show the available data right before any solve statement. You can cycle through the solve statements with a dropdown menu at the top right of the symbol panel.
@@ -55,10 +60,10 @@ If the symbol panel does not show any values, make sure that a) your model is fr
 
 ### Running your model
 
-There are multiple options for running your model: 
+There are multiple options for running your model:
 
- - Click the 'play' button in the sidebar
- - Open the command palette (`ctrl-shift-p`) and type `GAMS run` or just `run` followed by `enter`. 
+- Click the 'play' button in the sidebar
+- Open the command palette (`ctrl-shift-p`) and type `GAMS run` or just `run` followed by `enter`.
 
  The model will be solved in the background, so you can continue working. While the model is solving, the bottom panel will open and show the models console output. Once the model is solved, the listing file will be opened automatically in a new tab.
 
@@ -67,16 +72,20 @@ There are multiple options for running your model:
 Sometimes you need to check your parameters/sets values at a given position. Often, an abort statement is used in order to stop execution at that point and to display the values of the parameter. gams-ide gives you two options on how to speed up that process:
 
 If you type
+
 ```GAMS
 abort myParameterOrSet;
 ```
+
 and run your model (see section above), gams-ide will automatically jump to the parameter display in the listing file. Make sure you have the GAMS View sidebar opened, otherwise the listing file will be opened at the beggining of the document.
 
 ## Gotchas
+
 It may occur, that the `GAMS Sidebar` is not updating for a symbol that you click upon.
 
 In that case, the symbol you clicked is not read by the GAMS compiler, and you need to check your code logic (e.g. `$if` statements) for why the symbol is not read.
 Example
+
 ```GAMS
 $SETGLOBAL Country "France"
 

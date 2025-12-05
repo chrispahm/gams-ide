@@ -2,7 +2,7 @@
   "name": "gams-ide",
   "displayName": "gams-ide",
   "description": "A GAMS integrated development environment for VSCode",
-  "version": "0.0.92",
+  "version": "0.0.12",
   "repository": {
     "type": "git",
     "url": "https://github.com/chrispahm/gams-ide"
@@ -10,7 +10,7 @@
   "license": "MIT",
   "publisher": "chrispahm",
   "engines": {
-    "vscode": "^1.70.0"
+    "vscode": "^1.103.0"
   },
   "categories": [
     "Other"
@@ -27,6 +27,14 @@
       {
         "command": "gams.runThisFile",
         "title": "GAMS: Run this file"
+      },
+      {
+        "command": "gams.updateDiagnostics",
+        "title": "GAMS: Check errors"
+      },
+      {
+        "command": "gams.updateData",
+        "title": "GAMS: Update data"
       },
       {
         "command": "gams.compile",
@@ -71,6 +79,10 @@
       {
         "command": "gams.selectMainGmsFile",
         "title": "GAMS: Select main GAMS file"
+      },
+      {
+        "command": "gams.followIncludePath",
+        "title": "GAMS: Follow include path"
       },
       {
         "command": "gams.modelTree.showEXIT",
@@ -209,6 +221,12 @@
         }
       }
     ],
+    "keybindings": [
+      {
+        "command": "gams.followIncludePath",
+        "key": "alt+x"
+      }
+    ],
     "configuration": {
       "title": "GAMS-IDE",
       "properties": {
@@ -221,6 +239,11 @@
           "description": "The (scratch) directory where gams-ide will read/write temp files. Ideally located on a fast internal disk.",
           "type": "string",
           "default": ""
+        },
+        "gamsIde.runDiagnosticsOnSave": {
+          "description": "Compile the model when saving any file in the workspace. This is necessary to show diagnostics (e.g. errors) in the editor.",
+          "type": "boolean",
+          "default": true
         },
         "gamsIde.enableModelIncludeTreeView": {
           "description": "Enable a tree view of all includes/batincludes of the model in the sidebar. Make sure that the 'Include File Summary' is printed to the listing file, and $offInclude isn't present in the model source.",
@@ -288,9 +311,19 @@
           "default": []
         },
         "gamsIde.parseGamsData": {
-          "description": "Show symbol values for each solve in a console panel in the bottom dock. Recommended only for high end computers with >= 8gb RAM",
+          "description": "Show values of sets parameters, as well as the variable and equation listing for each solve in a console panel in the bottom dock. This will execute your model with a resource limit of 0, meaning the solver will terminate after 0 second. Still, this may take a while for large models.",
           "type": "boolean",
           "default": false
+        },
+        "gamsIde.parseGamsDataWithDiagnostics": {
+          "description": "If parseGamsData is enabled, this option will update the GAMS data every time the diagnostics are updated (model compilation). If runDiagnosticsOnSave is enabled, this means your model is executed every time a document is saved.",
+          "type": "boolean",
+          "default": true
+        },
+        "gamsIde.parseGamsDataResLim": {
+          "description": "Resource limit (resLim) setting when executing the model in order to parse GAMS data values. Defaults to 0.",
+          "type": "integer",
+          "default": 0
         },
         "gamsIde.consoleLimrow": {
           "description": "LIMROW setting if parse symbol values is turned on",
@@ -512,44 +545,51 @@
           "name": ""
         }
       ]
-    }
+    },
+    "mcpServerDefinitionProviders": [
+      {
+        "id": "gamsMcpServerProvider",
+        "label": "GAMS MCP Server Provider"
+      }
+    ]
   },
-  "main": "./dist/gams-ide.js",
+  "main": "./out/extension.js",
   "scripts": {
-    "lint": "eslint .",
-    "pretest": "npm run lint",
-    "test": "node ./test/runTest.js",
-    "build": "vsce package",
-    "vscode:prepublish": "npm run package",
-    "webpack": "webpack --mode development",
-    "webpack-dev": "webpack --mode development --watch",
-    "package": "webpack --mode production --devtool hidden-source-map",
-    "test-compile": "tsc -p ./",
-    "docs:dev": "vitepress dev docs",
-    "docs:build": "vitepress build docs",
-    "docs:preview": "vitepress preview docs"
+    "vscode:prepublish": "npm run esbuild-base -- --production",
+    "esbuild-base": "node esbuild.js",
+    "compile": "npm run esbuild-base",
+    "watch": "npm run esbuild-base -- --watch",
+    "pretest": "npm run compile && npm run lint",
+    "lint": "eslint src",
+    "test": "vscode-test"
   },
   "devDependencies": {
-    "@types/glob": "^8.1.0",
-    "@types/mocha": "^9.1.1",
-    "@types/node": "16.x",
-    "@types/vscode": "^1.70.0",
-    "@vscode/test-electron": "^2.1.5",
-    "eslint": "^8.20.0",
-    "mocha": "^10.0.0",
-    "peggy": "^3.0.2",
-    "typescript": "^4.7.4",
-    "vitepress": "^1.0.0-rc.20",
-    "vsce": "^2.15.0",
-    "webpack": "^5.88.2",
-    "webpack-cli": "^5.1.4"
+    "@types/lodash": "^4.17.20",
+    "@types/mocha": "^10.0.10",
+    "@types/node": "22.x",
+    "@types/vscode": "^1.103.0",
+    "@types/ws": "^8.18.1",
+    "@typescript-eslint/eslint-plugin": "^8.39.0",
+    "@typescript-eslint/parser": "^8.39.0",
+    "@vscode/test-cli": "^0.0.11",
+    "@vscode/test-electron": "^2.5.2",
+    "esbuild": "^0.27.0",
+    "eslint": "^9.32.0",
+    "peggy": "^5.0.6",
+    "typescript": "^5.9.2",
+    "vitepress": "^1.6.4",
+    "vue3-carousel": "^0.16.0"
   },
   "dependencies": {
+    "@duckdb/duckdb-wasm": "^1.30.1-dev2.0",
+    "@modelcontextprotocol/sdk": "^1.18.0",
     "@vscode/codicons": "^0.0.33",
     "glob": "^10.2.7",
     "lodash": "^4.17.21",
     "readline-specific": "^1.0.4",
-    "shelljs": "^0.8.5"
+    "shelljs": "^0.8.5",
+    "ws": "^8.18.3",
+    "zod": "^3.25.76"
   },
   "extensionDependencies": [
     "lolow.gams"
