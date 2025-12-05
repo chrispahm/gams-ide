@@ -7,6 +7,7 @@ import gmsImplementationProvider from './gmsImplementationProvider';
 import gmsDocumentSymbolsProvider from './gmsDocumentSymbolsProvider';
 import gmsCompletionItemsProvider from './gmsCompletionItemsProvider';
 import gmsSignatureHelpProvider from './gmsSignatureHelpProvider';
+import { registerEmbeddedPythonProviders } from './embeddedPython';
 import State from '../State';
 
 export default function implementLSPMethods(context: vscode.ExtensionContext, state: State): void {
@@ -104,4 +105,8 @@ export default function implementLSPMethods(context: vscode.ExtensionContext, st
       }
     }, "(", ",")
   );
+
+  // Register embedded Python language support
+  // This provides Python language features (completion, hover, etc.) for embedded Python code sections
+  registerEmbeddedPythonProviders(context);
 };

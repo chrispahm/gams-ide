@@ -1,6 +1,7 @@
 import * as vscode from "vscode";
 import gamsParser from "../utils/gamsParser.js";
 import { ReferenceSymbol, CompileTimeVariable, GamsLineAst } from "../types/gams-symbols";
+import { isPositionInEmbeddedPython } from "./embeddedPython";
 import State from "../State";
 
 function getCompletionStringsSubsets(symbol: ReferenceSymbol): (string | undefined)[] {
@@ -147,6 +148,11 @@ export default function provideGAMSCompletionItems(
   position: vscode.Position,
   state: State
 ): vscode.CompletionItem[] {
+  // Skip GAMS completions if we're inside an embedded Python region
+  if (isPositionInEmbeddedPython(document, position)) {
+    return [];
+  }
+
   let ast: GamsLineAst = [];
   const referenceTree = (state.get<ReferenceSymbol[]>("referenceTree") ?? []);
   const compileTimeVariables = (state.get<CompileTimeVariable[]>("compileTimeVariables") ?? []);

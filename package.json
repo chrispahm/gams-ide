@@ -19,6 +19,16 @@
     "onLanguage:gams"
   ],
   "contributes": {
+    "grammars": [
+      {
+        "scopeName": "source.python.embedded.gams",
+        "path": "./syntaxes/embedded-python.json",
+        "injectTo": ["source.gms"],
+        "embeddedLanguages": {
+          "meta.embedded.block.python": "python"
+        }
+      }
+    ],
     "commands": [
       {
         "command": "gams.run",

@@ -1,0 +1,48 @@
+{
+  "scopeName": "source.python.embedded.gams",
+  "injectionSelector": "L:source.gms",
+  "patterns": [
+    {
+      "name": "meta.embedded.block.python.gams",
+      "begin": "(?i)^\\s*(\\$\\$?onEmbeddedCode[SV]?(?:\\.\\w+)?\\s+Python\\s*:.*)$",
+      "beginCaptures": {
+        "1": {
+          "name": "keyword.control.embedded.gams"
+        }
+      },
+      "end": "(?i)^\\s*(\\$\\$?offEmbeddedCode(?:\\.\\w+)?.*?)$",
+      "endCaptures": {
+        "1": {
+          "name": "keyword.control.embedded.gams"
+        }
+      },
+      "contentName": "meta.embedded.block.python",
+      "patterns": [
+        {
+          "include": "source.python"
+        }
+      ]
+    },
+    {
+      "name": "meta.embedded.block.python.gams.execution",
+      "begin": "(?i)^\\s*((?:embeddedCode|continueEmbeddedCode)[SV]?(?:\\.\\w+)?\\s+Python\\s*:.*)$",
+      "beginCaptures": {
+        "1": {
+          "name": "keyword.control.embedded.gams"
+        }
+      },
+      "end": "(?i)^\\s*((?:end|pause)EmbeddedCode(?:\\.\\w+)?.*?)$",
+      "endCaptures": {
+        "1": {
+          "name": "keyword.control.embedded.gams"
+        }
+      },
+      "contentName": "meta.embedded.block.python",
+      "patterns": [
+        {
+          "include": "source.python"
+        }
+      ]
+    }
+  ]
+}

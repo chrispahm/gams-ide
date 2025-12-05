@@ -2,12 +2,17 @@ import * as vscode from "vscode";
 import State from "../State";
 import { ReferenceSymbol, GamsLineAst } from "../types/gams-symbols";
 import gamsParser from '../utils/gamsParser.js';
+import { isPositionInEmbeddedPython } from './embeddedPython';
 
 export default function provideGAMSSignatureHelp(
   document: vscode.TextDocument,
   position: vscode.Position,
   state: State
 ) {
+  // Skip if inside embedded Python code
+  if (isPositionInEmbeddedPython(document, position)) {
+    return null;
+  }
   const referenceTree = state.get<ReferenceSymbol[]>("referenceTree") || [];
   let ast: GamsLineAst = [];
   try {

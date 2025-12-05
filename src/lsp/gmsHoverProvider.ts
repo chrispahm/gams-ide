@@ -1,12 +1,18 @@
 import * as vscode from "vscode";
 import State from "../State";
 import { ReferenceSymbol, CompileTimeVariable } from "../types/gams-symbols";
+import { isPositionInEmbeddedPython } from "./embeddedPython";
 
 export default function gmsHoverProvider(
   document: vscode.TextDocument,
   position: vscode.Position,
   state: State
 ): vscode.Hover | null {
+  // Skip GAMS hover if we're inside an embedded Python region
+  if (isPositionInEmbeddedPython(document, position)) {
+    return null;
+  }
+
   // get the word at the current position
   const wordRange = document.getWordRangeAtPosition(position);
   if (!wordRange) { return null; } // nothing to hover

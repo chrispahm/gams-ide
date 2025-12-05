@@ -1,12 +1,17 @@
 import * as vscode from "vscode";
 import State from "../State";
 import { ReferenceSymbol } from "../types/gams-symbols";
+import { isPositionInEmbeddedPython } from './embeddedPython';
 
 export default function gmsDeclarationProvider(
   document: vscode.TextDocument,
   position: vscode.Position,
   state: State
 ): vscode.Location | null {
+  // Skip if inside embedded Python code
+  if (isPositionInEmbeddedPython(document, position)) {
+    return null;
+  }
   // get the word at the current position
   const wordRange = document.getWordRangeAtPosition(position);
   if (!wordRange) { return null; }
