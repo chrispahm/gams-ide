@@ -263,6 +263,11 @@
           "type": "boolean",
           "default": true
         },
+        "gamsIde.skipDiagnosticsOnFileOpen": {
+          "description": "Do not update diagnostics (GAMS compilation check) when opening new files. Enable this if you want to manually trigger diagnostics.",
+          "type": "boolean",
+          "default": false
+        },
         "gamsIde.enableModelIncludeTreeView": {
           "description": "Enable a tree view of all includes/batincludes of the model in the sidebar. Make sure that the 'Include File Summary' is printed to the listing file, and $offInclude isn't present in the model source.",
           "type": "boolean",

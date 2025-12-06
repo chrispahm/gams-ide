@@ -54,7 +54,8 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
 	if (vscode.window.activeTextEditor) {
 		const document = vscode.window.activeTextEditor.document;
 		// check if the active editor is a GAMS file
-		if (document.languageId === "gams") {
+		const skipDiagnosticsOnFileOpen = vscode.workspace.getConfiguration("gamsIde").get("skipDiagnosticsOnFileOpen");
+		if (document.languageId === "gams" && !skipDiagnosticsOnFileOpen) {
 			await updateDiagnostics({ document, collection, state, terminal });
 		}
 	}
@@ -67,10 +68,12 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
 				// updating diagnostics is only necessary if
 				// a) there is no main file set
 				// b) there is a main file, but this file is excluded from the main file
+				// c) skipDiagnosticsOnFileOpen is not enabled
 				const mainGmsFile = vscode.workspace.getConfiguration("gamsIde").get("mainGmsFile");
 				const excludeFromMainGmsFile = vscode.workspace.getConfiguration().get("gamsIde.excludeFromMainGmsFile") as string[] | undefined;
+				const skipDiagnosticsOnFileOpen = vscode.workspace.getConfiguration("gamsIde").get("skipDiagnosticsOnFileOpen");
 				const file = editor.document.fileName;
-				if (!mainGmsFile || checkIfExcluded(file, excludeFromMainGmsFile)) {
+				if (!skipDiagnosticsOnFileOpen && (!mainGmsFile || checkIfExcluded(file, excludeFromMainGmsFile))) {
 					await updateDiagnostics({
 						document: editor.document,
 						collection,
