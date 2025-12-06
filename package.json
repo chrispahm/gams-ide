@@ -95,6 +95,14 @@
         "title": "GAMS: Follow include path"
       },
       {
+        "command": "gams.startMcpServer",
+        "title": "GAMS: Start MCP Server"
+      },
+      {
+        "command": "gams.stopMcpServer",
+        "title": "GAMS: Stop MCP Server"
+      },
+      {
         "command": "gams.modelTree.showEXIT",
         "title": "  EXIT"
       },
@@ -349,6 +357,13 @@
           "description": "dispWidth setting if parse symbol values is turned on",
           "type": "integer",
           "default": 15
+        },
+        "gamsIde.mcpServerPort": {
+          "description": "Port number for the GAMS MCP server. The MCP server provides tools for AI assistants to interact with GAMS models.",
+          "type": "integer",
+          "default": 3001,
+          "minimum": 1024,
+          "maximum": 65535
         }
       }
     },
@@ -556,10 +571,198 @@
         }
       ]
     },
-    "mcpServerDefinitionProviders": [
+    "languageModelTools": [
       {
-        "id": "gamsMcpServerProvider",
-        "label": "GAMS MCP Server Provider"
+        "name": "gams-ide_search_symbols",
+        "displayName": "Search GAMS Symbols",
+        "toolReferenceName": "gamsSearchSymbols",
+        "icon": "$(search)",
+        "userDescription": "Semantically search for GAMS symbols based on a natural language query.",
+        "modelDescription": "Semantically search for GAMS symbols (sets, parameters, variables, equations) based on a natural language query. Use this to find relevant symbols when you don't know the exact name. Returns a list of symbol names that best match the query.",
+        "canBeReferencedInPrompt": true,
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "query": {
+              "type": "string",
+              "description": "The natural language query to find symbols for."
+            }
+          },
+          "required": ["query"]
+        }
+      },
+      {
+        "name": "gams-ide_get_symbol_details",
+        "displayName": "Get GAMS Symbol Details",
+        "toolReferenceName": "gamsSymbolDetails",
+        "icon": "$(symbol-property)",
+        "userDescription": "Get detailed information about specific GAMS symbols.",
+        "modelDescription": "Retrieve detailed static analysis information for specific GAMS symbols, including type, description, domain, declaration/definition/control locations, AND all references/assignments (read/write usages). Use this when you need to understand a symbol's structure, where it's defined, and how it's used.",
+        "canBeReferencedInPrompt": true,
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "symbols": {
+              "type": "array",
+              "items": { "type": "string" },
+              "description": "List of symbol names to fetch info for (case insensitive)."
+            }
+          },
+          "required": ["symbols"]
+        }
+      },
+      {
+        "name": "gams-ide_get_symbol_values",
+        "displayName": "Get GAMS Symbol Values",
+        "toolReferenceName": "gamsSymbolValues",
+        "icon": "$(symbol-numeric)",
+        "userDescription": "Get actual data values for GAMS symbols from the latest execution.",
+        "modelDescription": "Retrieve the actual data values for specific GAMS symbols from the latest execution results. Use this when you need to see the current values of sets, parameters, variables, or equations after a model run.",
+        "canBeReferencedInPrompt": true,
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "symbols": {
+              "type": "array",
+              "items": { "type": "string" },
+              "description": "List of symbol names to fetch data for (case sensitive, matching the data store)."
+            }
+          },
+          "required": ["symbols"]
+        }
+      },
+      {
+        "name": "gams-ide_get_model_structure",
+        "displayName": "Get GAMS Model Structure",
+        "toolReferenceName": "gamsModelStructure",
+        "icon": "$(list-tree)",
+        "userDescription": "Get the hierarchy of included files for the main GAMS file.",
+        "modelDescription": "Get the hierarchy of included files (the 'include tree') for the main GAMS file. Use this to understand file dependencies, execution order, and how different GAMS files are connected.",
+        "canBeReferencedInPrompt": true,
+        "inputSchema": {
+          "type": "object",
+          "properties": {}
+        }
+      },
+      {
+        "name": "gams-ide_get_solve_status",
+        "displayName": "Get GAMS Solve Status",
+        "toolReferenceName": "gamsSolveStatus",
+        "icon": "$(check)",
+        "userDescription": "Get the Model Status and Solver Status from a listing file.",
+        "modelDescription": "Get the Model Status and Solver Status from the listing file (e.g. Optimal, Infeasible). Use this to quickly check if the model solved successfully and understand any solver issues.",
+        "canBeReferencedInPrompt": true,
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "lstFilePath": {
+              "type": "string",
+              "description": "Absolute path to the .lst file."
+            }
+          },
+          "required": ["lstFilePath"]
+        }
+      },
+      {
+        "name": "gams-ide_get_reference_tree",
+        "displayName": "Get GAMS Reference Tree",
+        "toolReferenceName": "gamsReferenceTree",
+        "icon": "$(references)",
+        "userDescription": "Get the full symbol reference tree as CSV.",
+        "modelDescription": "Get the full symbol reference tree as CSV. WARNING: This can be very large. Prefer using 'search_gams_symbols' or 'get_symbol_details' unless you need a global view of all symbols in the model.",
+        "canBeReferencedInPrompt": true,
+        "inputSchema": {
+          "type": "object",
+          "properties": {}
+        }
+      },
+      {
+        "name": "gams-ide_check_syntax_errors",
+        "displayName": "Check GAMS Syntax Errors",
+        "toolReferenceName": "gamsCheckSyntax",
+        "icon": "$(error)",
+        "userDescription": "Trigger a syntax check and update diagnostics for the current GAMS file.",
+        "modelDescription": "Trigger a syntax check and update diagnostics for the current GAMS file or workspace. Use this to validate code changes and find compilation errors before running the model.",
+        "canBeReferencedInPrompt": true,
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "file": {
+              "type": "string",
+              "description": "Optional path to a GAMS file to run diagnostics for. If omitted, diagnostics run for the active editor."
+            }
+          }
+        }
+      },
+      {
+        "name": "gams-ide_get_execution_command",
+        "displayName": "Get GAMS Execution Command",
+        "toolReferenceName": "gamsExecutionCommand",
+        "icon": "$(terminal)",
+        "userDescription": "Get the command line string required to execute a GAMS model.",
+        "modelDescription": "Get the command line string required to execute a GAMS model, including all configured arguments and paths. Use the returned command string with the runInTerminal tool to execute the model and see the log output.",
+        "canBeReferencedInPrompt": true,
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "file": {
+              "type": "string",
+              "description": "Optional path to a GAMS file. If omitted, uses gamsIde.mainGmsFile."
+            },
+            "extraArgs": {
+              "type": "array",
+              "items": { "type": "string" },
+              "description": "Optional additional command line arguments to append to the GAMS command."
+            }
+          }
+        }
+      },
+      {
+        "name": "gams-ide_get_compile_command",
+        "displayName": "Get GAMS Compile Command",
+        "toolReferenceName": "gamsCompileCommand",
+        "icon": "$(gear)",
+        "userDescription": "Get the command line string required to compile a GAMS model.",
+        "modelDescription": "Get the command line string required to compile a GAMS model (syntax check only, no execution). Does not execute the command.",
+        "canBeReferencedInPrompt": true,
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "file": {
+              "type": "string",
+              "description": "Optional path to a GAMS file. If omitted, uses gamsIde.mainGmsFile."
+            },
+            "extraArgs": {
+              "type": "array",
+              "items": { "type": "string" },
+              "description": "Optional additional command line arguments to append to the GAMS command."
+            }
+          }
+        }
+      },
+      {
+        "name": "gams-ide_read_listing_for_symbols",
+        "displayName": "Read GAMS Listing for Symbols",
+        "toolReferenceName": "gamsReadListing",
+        "icon": "$(file-text)",
+        "userDescription": "Extract specific symbol information from a GAMS listing file.",
+        "modelDescription": "Read and extract specific symbol information (values, equation listings, solution reports) from a GAMS listing (.lst) file. Use this to debug generated algebra, check results, or understand how equations were generated.",
+        "canBeReferencedInPrompt": true,
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "lstFilePath": {
+              "type": "string",
+              "description": "Absolute path to the .lst file to filter."
+            },
+            "symbols": {
+              "type": "array",
+              "items": { "type": "string" },
+              "description": "List of symbol names to filter for."
+            }
+          },
+          "required": ["lstFilePath", "symbols"]
+        }
       }
     ]
   },

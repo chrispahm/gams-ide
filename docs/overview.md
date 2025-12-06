@@ -18,13 +18,13 @@ const features = [{
   },
   details: 'See where a symbol is declared, defined, or referenced in the symbol panel. Quickly observe all places where a parameter is assigned values, or which subsets are defined for a set.'
 }, {
-  title: 'Data Panel',
+  title: 'Copilot Integration',
   icon: {
     light: '/feature-data-panel.png',
     dark: '/feature-data-panel-dark.png',
     width: 200
   },
-  details: 'Display parameter and set values, as well as variable and equation listings in the bottom dock right next to your code.'
+  details: 'Leverage AI assistance directly within your GAMS modeling environment to generate code snippets, optimize model structures, and receive real-time suggestions as you write your models.'
 }, {
   title: 'Include File Tree',
   icon: {

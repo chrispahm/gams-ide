@@ -14,11 +14,14 @@ import registerIncludeTreeCommands from "./registerIncludeTreeCommands";
 import State from "./State.js";
 import { ReferenceSymbol } from "./types/gams-symbols";
 import { startHttpServer } from "./httpServer";
+import { registerGamsLmTools } from "./lm/lmTools";
+import { startMcpHttpServer, stopMcpHttpServer, isMcpServerRunning, getMcpServerUrl } from "./mcp/httpServer";
 
 let terminal: vscode.Terminal;
 let gamsView: vscode.WebviewView | undefined;
 let gamsDataView: vscode.WebviewView | undefined;
 let gamsStatusBarItem: vscode.StatusBarItem;
+let mcpStatusBarItem: vscode.StatusBarItem;
 let includeTreeProvider: vscode.Disposable | undefined;
 
 function createOrFindTerminal(): vscode.Terminal {
@@ -41,6 +44,10 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
 	const state = new State();
 	// start the HTTP server
 	const httpServerPort = await startHttpServer(state);
+	
+	// register GAMS language model tools
+	registerGamsLmTools(context, httpServerPort);
+	
 	// start listening to save events to generate diagnostics
 	const collection = vscode.languages.createDiagnosticCollection("gams");
 
@@ -128,33 +135,66 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
 	// add LSP features
 	implementLSPMethods(context, state);
 
-	// add the MCP server
-	const didChangeEmitter = new vscode.EventEmitter<void>();
+	// MCP Server status bar item
+	mcpStatusBarItem = vscode.window.createStatusBarItem(vscode.StatusBarAlignment.Right, 99);
+	mcpStatusBarItem.command = 'gams.startMcpServer';
+	updateMcpStatusBar();
+	context.subscriptions.push(mcpStatusBarItem);
 
-	context.subscriptions.push(vscode.lm.registerMcpServerDefinitionProvider('gamsMcpServerProvider', {
-		onDidChangeMcpServerDefinitions: didChangeEmitter.event,
-		provideMcpServerDefinitions: async () => {
-			let servers: vscode.McpServerDefinition[] = [];
-
-			// Use the same Node.js executable that's running the extension
-			// This avoids requiring users to have node in their PATH
-			servers.push(new vscode.McpStdioServerDefinition(
-				'gamsMcpServer',
-				process.execPath,
-				[context.asAbsolutePath('out/mcp/server.js')],
-				{ API_SERVER_PORT: String(httpServerPort) }
-			));
-
-			return servers;
-		},
-		resolveMcpServerDefinition: async (server: vscode.McpServerDefinition) => {
-			// Return undefined to indicate that the server should not be started or throw an error
-			// If there is a pending tool call, the editor will cancel it and return an error message
-			// to the language model.
-			console.log('Resolving MCP server definition:', server);
-			return server;
+	// Helper function to update MCP status bar
+	function updateMcpStatusBar() {
+		const mcpPort = vscode.workspace.getConfiguration("gamsIde").get<number>("mcpServerPort") || 3001;
+		if (isMcpServerRunning()) {
+			mcpStatusBarItem.text = `$(radio-tower) MCP :${mcpPort}`;
+			mcpStatusBarItem.tooltip = `GAMS MCP Server running at ${getMcpServerUrl(mcpPort)}\nClick to stop`;
+			mcpStatusBarItem.command = 'gams.stopMcpServer';
+			mcpStatusBarItem.backgroundColor = new vscode.ThemeColor('statusBarItem.warningBackground');
+			mcpStatusBarItem.show();
+		} else {
+			mcpStatusBarItem.hide();
 		}
-	}));
+	}
+
+	// Register MCP server commands
+	context.subscriptions.push(
+		vscode.commands.registerCommand("gams.startMcpServer", async () => {
+			if (isMcpServerRunning()) {
+				vscode.window.showInformationMessage('GAMS MCP Server is already running.');
+				return;
+			}
+
+			const mcpPort = vscode.workspace.getConfiguration("gamsIde").get<number>("mcpServerPort") || 3001;
+			
+			try {
+				await startMcpHttpServer(httpServerPort, mcpPort);
+				const url = getMcpServerUrl(mcpPort);
+				vscode.window.showInformationMessage(`GAMS MCP Server started at ${url}`);
+				updateMcpStatusBar();
+			} catch (error) {
+				const message = error instanceof Error ? error.message : String(error);
+				vscode.window.showErrorMessage(`Failed to start MCP Server: ${message}`);
+			}
+		})
+	);
+
+	context.subscriptions.push(
+		vscode.commands.registerCommand("gams.stopMcpServer", async () => {
+			if (!isMcpServerRunning()) {
+				vscode.window.showInformationMessage('GAMS MCP Server is not running.');
+				return;
+			}
+
+			try {
+				await stopMcpHttpServer();
+				vscode.window.showInformationMessage('GAMS MCP Server stopped.');
+				updateMcpStatusBar();
+			} catch (error) {
+				const message = error instanceof Error ? error.message : String(error);
+				vscode.window.showErrorMessage(`Failed to stop MCP Server: ${message}`);
+			}
+		})
+	);
+
 	// add commands    
 	// register a command to get the symbol under the cursor
 	context.subscriptions.push(
