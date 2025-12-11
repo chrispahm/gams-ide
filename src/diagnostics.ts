@@ -1,6 +1,6 @@
 import * as vscode from 'vscode';
 import { format, parse } from 'node:path';
-import { exec } from 'node:child_process';
+import { spawn } from 'node:child_process';
 import { readFile, access, unlink } from 'fs/promises';
 import parseError, { ParsedErrorMessage } from './utils/parseError';
 import createRefTree from './utils/createRefTree.js';
@@ -49,9 +49,41 @@ interface ParseIncludeFileSummaryResult {
   compileTimeVariables: CompileTimeVariable[];
 }
 
-function execAsync(command: string): Promise<ExecResult> {
+function execAsync(command: string, state: State, lstPath: string): Promise<ExecResult> {
+  // get outputChannel from state
+  const outputChannel = state.get<vscode.LogOutputChannel>("outputChannel");
   return new Promise(resolve => {
-    exec(command, (error, stdout, stderr) => {
+    const child = spawn(command, { shell: true });
+    let stdout = '';
+    let stderr = '';
+    let error: (Error & { code?: number }) | null = null;
+
+    if (outputChannel) {
+      outputChannel.info(`\n$ ${command}\n`);
+    }
+
+    child.stdout.on('data', (data: Buffer) => {
+      const chunk = data.toString();
+      stdout += chunk;
+      outputChannel?.append(chunk);
+    });
+
+    child.stderr.on('data', (data: Buffer) => {
+      const chunk = data.toString();
+      stderr += chunk;
+      outputChannel?.error(chunk);
+    });
+
+    child.on('error', (err) => {
+      error = err as (Error & { code?: number });
+    });
+
+    child.on('close', (code) => {
+      // print the lst file path to the output channel
+      outputChannel?.info(`GAMS .lst file located at: ${lstPath}\n`);
+      if (code && code !== 0) {
+        error = Object.assign(new Error(`Command failed with exit code ${code}`), { code });
+      }
       resolve({ error, stdout, stderr });
     });
   });
@@ -82,6 +114,7 @@ async function updateDiagnostics(args: UpdateDiagnosticsArgs): Promise<void> {
 
   const pkgConfig = vscode.workspace.getConfiguration("gamsIde");
   const shouldParseGamsData = pkgConfig.get("parseGamsData") && (pkgConfig.get("parseGamsDataWithDiagnostics") || forceDataParsing);
+  const keepOutputFilesInScratchDir = pkgConfig.get<boolean>("keepOutputFilesInScratchDir");
 
   if (document && collection) {
     // clear the previous collection, as we are going to re-populate it
@@ -93,7 +126,7 @@ async function updateDiagnostics(args: UpdateDiagnosticsArgs): Promise<void> {
     let res: ExecResult | undefined;
     try {
       // run the compile command      
-      res = await execAsync(command);
+      res = await execAsync(command, state, compileCommand.listingPath);
     } catch (error) {
       // show error in VS Code output
       // and add button to open the lst file
@@ -122,8 +155,10 @@ async function updateDiagnostics(args: UpdateDiagnosticsArgs): Promise<void> {
 
       // parse the contents of the error file
       const errorFileContents = await readFile(compileCommand.errorPath, 'utf8');
-      // delete the error file, but do not wait for it
-      unlink(compileCommand.errorPath);
+      // delete the error file, but do not wait for it (unless user wants to keep it)
+      if (!keepOutputFilesInScratchDir) {
+        unlink(compileCommand.errorPath);
+      }
       // if include parsing is enabled, parse the include file summary
       (parseIncludeFileSummary(compileCommand.listingPath, state) as Promise<ParseIncludeFileSummaryResult>).then(({ includeFileSummary, compileTimeVariables }) => {
         state.update('parsedIncludes', includeFileSummary);
@@ -133,7 +168,9 @@ async function updateDiagnostics(args: UpdateDiagnosticsArgs): Promise<void> {
           vscode.commands.executeCommand('gams.refreshIncludeTree');
         }
         // delete the lst file, but do not wait for it
-        unlink(compileCommand.listingPath);
+        if (!keepOutputFilesInScratchDir) {
+          unlink(compileCommand.listingPath);
+        }
       }).catch(err => {
         console.error("error", err);
       });
@@ -208,7 +245,9 @@ async function updateDiagnostics(args: UpdateDiagnosticsArgs): Promise<void> {
                 console.error("error", err);
               } else {
                 // delete the dmp lst file, but do not wait for it
-                unlink(compileCommand.dumpPath + ".lst");
+                if (!keepOutputFilesInScratchDir) {
+                  unlink(compileCommand.dumpPath + ".lst");
+                }
               }
               vscode.commands.executeCommand('gams.getSymbolUnderCursor');
               dataProgress.report({ increment: 100 });

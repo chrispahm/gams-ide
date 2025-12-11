@@ -23,6 +23,7 @@ let gamsDataView: vscode.WebviewView | undefined;
 let gamsStatusBarItem: vscode.StatusBarItem;
 let mcpStatusBarItem: vscode.StatusBarItem;
 let includeTreeProvider: vscode.Disposable | undefined;
+let gmsOutputChannel: vscode.OutputChannel | undefined;
 
 function createOrFindTerminal(): vscode.Terminal {
 	// check if a terminal with the name "GAMS" already exists
@@ -40,8 +41,14 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
 	await clearScrdir();
 	// check if a terminal with the name "GAMS" already exists
 	terminal = createOrFindTerminal();
-
+	// create output channel for GAMS messages
+	if (!gmsOutputChannel) {
+		gmsOutputChannel = vscode.window.createOutputChannel("GAMS", { log: true });
+	}
 	const state = new State();
+	// add output channel to state
+	state.update("outputChannel", gmsOutputChannel);
+
 	// start the HTTP server
 	const httpServerPort = await startHttpServer(state);
 	

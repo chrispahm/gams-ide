@@ -258,6 +258,11 @@
           "type": "string",
           "default": ""
         },
+        "gamsIde.keepOutputFilesInScratchDir": {
+          "description": "Keep generated .err, .ref, and .lst files in the scratch directory instead of deleting them after use.",
+          "type": "boolean",
+          "default": false
+        },
         "gamsIde.runDiagnosticsOnSave": {
           "description": "Compile the model when saving any file in the workspace. This is necessary to show diagnostics (e.g. errors) in the editor.",
           "type": "boolean",

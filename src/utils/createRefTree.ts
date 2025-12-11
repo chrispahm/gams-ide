@@ -1,6 +1,7 @@
 import * as readline from 'readline';
 import * as fs from 'fs';
 import * as path from 'path';
+import * as vscode from 'vscode';
 
 interface SymbolLocation { line: number; column: number; file?: string; base?: string }
 interface SymbolAction extends SymbolLocation {}
@@ -141,6 +142,11 @@ export default function createRefTree(refFile: string): Promise<SymbolEntry[]> {
     }
 
     rl.on('close', () => {
+      const keepOutputFilesInScratchDir = vscode.workspace.getConfiguration("gamsIde").get<boolean>("keepOutputFilesInScratchDir");
+      if (keepOutputFilesInScratchDir) {
+        resolve(Object.values(json));
+        return;
+      }
       fs.unlink(refFile, (err) => {
         if (err) {
           return reject(err);
