@@ -2,7 +2,7 @@
   "name": "gams-ide",
   "displayName": "gams-ide",
   "description": "A GAMS integrated development environment for VSCode",
-  "version": "0.0.14",
+  "version": "0.0.15",
   "repository": {
     "type": "git",
     "url": "https://github.com/chrispahm/gams-ide"
@@ -773,6 +773,18 @@
           },
           "required": ["lstFilePath", "symbols"]
         }
+      }
+    ],
+    "chatAgents": [
+      {
+        "name": "GAMS-Planner",
+        "path": "./assets/agents/GAMS-Planner.agent.md",
+        "description": "Researches a GAMS task to create multi-step plans"
+      },
+      {
+        "name": "GAMS-Agent",
+        "path": "./assets/agents/GAMS-Agent.agent.md",
+        "description": "An autonomous agent that can execute GAMS-related tasks"
       }
     ]
   },
