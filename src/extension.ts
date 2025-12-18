@@ -30,7 +30,9 @@ function createOrFindTerminal(): vscode.Terminal {
 	let terminal = vscode.window.terminals.find((terminal) => terminal.name === "GAMS");
 	// if not, create a terminal for compiling and executing GAMS files
 	if (!terminal) {
-		terminal = vscode.window.createTerminal("GAMS");
+		const isWindows = process.platform === 'win32';
+
+		terminal = vscode.window.createTerminal("GAMS", isWindows ? "cmd.exe" : undefined);
 	}
 	return terminal;
 }

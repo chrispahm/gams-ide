@@ -2,7 +2,7 @@
   "name": "gams-ide",
   "displayName": "gams-ide",
   "description": "A GAMS integrated development environment for VSCode",
-  "version": "0.0.12",
+  "version": "0.0.14",
   "repository": {
     "type": "git",
     "url": "https://github.com/chrispahm/gams-ide"
@@ -818,6 +818,7 @@
     "zod": "^3.25.76"
   },
   "extensionDependencies": [
-    "lolow.gams"
+    "lolow.gams",
+    "chrispahm.gdx-viewer"
   ]
 }
