@@ -11,19 +11,19 @@ export default defineConfig({
       { text: 'Guide', link: '/overview' },
       { text: 'VSCode Marketplace', link: 'https://marketplace.visualstudio.com/vscode' }
     ],
-    
+
     editLink: {
       pattern: 'https://github.com/chrispahm/gams-ide/edit/main/docs/:path'
     },
-    
+
     sidebar: [
       {
         text: 'Guide',
         items: [
           { text: 'Overview', link: '/overview' },
           { text: 'Setup', link: '/setup/installation' },
-          { 
-            text: 'Configuration',  
+          {
+            text: 'Configuration',
             items: [
               {
                 text: "Settings",
@@ -69,6 +69,10 @@ export default defineConfig({
                 link: '/usage/overview'
               },
               {
+                text: "Writing GAMS",
+                link: '/usage/writing-gams'
+              },
+              {
                 text: "Compiling and Executing GAMS",
                 link: '/usage/compiling-and-executing-gams'
               },
@@ -87,6 +91,14 @@ export default defineConfig({
               {
                 text: "Switching between Main GMS files",
                 link: '/usage/switching-main-gms-files'
+              },
+              {
+                text: "Using the MCP Server",
+                link: '/usage/mcp-server'
+              },
+              {
+                text: "Embedded Python Support",
+                link: '/usage/embedded-python-support'
               }
             ]
           },

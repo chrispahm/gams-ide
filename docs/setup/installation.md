@@ -1,25 +1,32 @@
-# Setup
+# Installation
+
+Getting started with GAMS-IDE is easy. You'll need to have VS Code and GAMS installed on your system.
 
 ## Prerequisites
 
-You need to have [GAMS](https://www.gams.com/) and [Visual Studio Code](https://code.visualstudio.com/) installed on your system to use GAMS-IDE. If you don't have GAMS installed yet, you can download it from the [GAMS website](https://www.gams.com/download/). 
+1.  **VS Code**: Download and install Visual Studio Code from [code.visualstudio.com](https://code.visualstudio.com/).
+2.  **GAMS**: Download and install the method appropriate for your operating system from [gams.com](https://www.gams.com/download/).
+    *   *Note: Ensure GAMS is added to your system's PATH, or you will need to configure the `gamsExecutable` path manually in the extension settings.*
 
-For running GAMS models, you also need to have a valid GAMS license. If you don't have a license yet, you can request a free community license from the [GAMS website](https://www.gams.com/latest/docs/UG_License.html#GAMS_Community_Licenses).
+## Installing the Extension
 
-## Installation
+The GAMS-IDE extension is available on the Visual Studio Code Marketplace.
 
-### VS Code Marketplace
+1.  Open VS Code.
+2.  Go to the **Extensions** view by clicking on the Extensions icon in the Activity Bar on the side of the window or by pressing `Ctrl+Shift+X` (Windows/Linux) or `Cmd+Shift+X` (macOS).
+3.  Search for `GAMS-IDE`.
+4.  Click **Install**.
 
-The easiest way to install GAMS-IDE is to use the [VS Code Marketplace](https://marketplace.visualstudio.com/items?itemName=chrispahm.gams-ide). Simply search for "GAMS-IDE" in the extensions tab of VS Code, and click install.
+![Searching for GAMS-IDE in the VS Code Marketplace](/screenshots/installation-marketplace.png)
 
-### VSIX Package
+## Verifying the Installation
 
-Alternatively, you can download the latest VSIX package from the [releases page](https://github.com/chrispahm/gams-ide/releases). 
+To verify that the extension is working correctly:
 
-Then, open the extensions tab in VS Code, click the three dots in the top right corner, and select "Install from VSIX...". Select the downloaded VSIX file, and click "Install".
+1.  Open a `.gms` file.
+2.  You should see syntax highlighting for GAMS code.
+3.  The status bar should show GAMS-related information.
 
-## Quick Start
-
-After installing the extension, you can open a GAMS file in VS Code. The extension will automatically detect the file type and activate the GAMS-IDE features.
-
-GAMS-IDE will try to detect a GAMS installation on your system. If it cannot find one, you will be prompted to select the GAMS executable. You can also select the GAMS executable manually by setting the `gamsIde.gamsExecutable` configuration option in the [VS Code Settings](https://code.visualstudio.com/docs/getstarted/settings). See the [Configuration](/configuration/settings.html#gamsExecutable) section for more details.
+::: tip
+If you encounter any issues, check the [Troubleshooting](../usage/finding-compilation-errors.md) section or ensure your GAMS installation is correctly configured in the [Settings](../configuration/settings.md).
+:::
