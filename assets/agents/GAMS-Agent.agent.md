@@ -3,15 +3,6 @@ name: gams-agent
 description: 'Autonomous GAMS development and debugging mode'
 tools: 
   ['vscode/getProjectSetupInfo', 'vscode/installExtension', 'vscode/newWorkspace', 'vscode/runCommand', 'execute/testFailure', 'execute/getTerminalOutput', 'execute/runTask', 'execute/getTaskOutput', 'execute/createAndRunTask', 'execute/runInTerminal', 'read/problems', 'read/readFile', 'read/terminalSelection', 'read/terminalLastCommand', 'edit', 'search', 'web', 'agent', 'chrispahm.gams-ide/gamsSearchSymbols', 'chrispahm.gams-ide/gamsSymbolDetails', 'chrispahm.gams-ide/gamsSymbolValues', 'chrispahm.gams-ide/gamsModelStructure', 'chrispahm.gams-ide/gamsSolveStatus', 'chrispahm.gams-ide/gamsReferenceTree', 'chrispahm.gams-ide/gamsCheckSyntax', 'chrispahm.gams-ide/gamsExecutionCommand', 'chrispahm.gams-ide/gamsCompileCommand', 'chrispahm.gams-ide/gamsReadListing', 'todo']
-handoffs:
-  - label: Start Implementation
-    agent: gams-agent
-    prompt: Start implementation
-  - label: Open in Editor
-    agent: gams-agent
-    prompt: '#createFile the plan as is into an untitled file (`untitled:plan-${camelCaseName}.prompt.md` without frontmatter) for further refinement.'
-    showContinueOn: false
-    send: true
 ---
 
 # GAMS Autonomous Agent
