@@ -3,6 +3,7 @@ import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { StreamableHTTPServerTransport } from "@modelcontextprotocol/sdk/server/streamableHttp.js";
 import { z } from "zod";
 import { randomUUID } from 'crypto';
+import { Diagnostic } from 'vscode';
 
 // Store active sessions
 const sessions = new Map<string, { server: McpServer; transport: StreamableHTTPServerTransport }>();
@@ -152,7 +153,7 @@ function createMcpServer(apiServerPort: number): McpServer {
     {},
     async () => {
       try {
-        const res = await fetch(`http://localhost:${apiServerPort}/includeTree`);
+        const res = await fetch(`http://localhost:${apiServerPort}/model-structure`);
 
         if (!res.ok) {
           return returnError(`Failed to fetch model structure (status ${res.status}).`);
@@ -249,14 +250,14 @@ function createMcpServer(apiServerPort: number): McpServer {
           return returnError(`Failed to trigger diagnostics update (status ${res.status}).`);
         }
 
-        const data = await res.json() as { ok?: boolean; error?: string };
+        const data = await res.json() as { ok?: boolean; diagnostics?: Diagnostic[]; error?: string };
 
         if (!data.ok) {
           return returnError(`Diagnostics update reported failure: ${data.error || "unknown error"}.`);
         }
 
         return {
-          content: [{ type: "text" as const, text: JSON.stringify({ ok: true }, null, 2) }],
+          content: [{ type: "text" as const, text: JSON.stringify({ ok: true, diagnostics: data.diagnostics ?? [] }, null, 2) }],
         };
       } catch (error: unknown) {
         const message = error instanceof Error ? error.message : String(error);

@@ -89,34 +89,34 @@ export class GAMSIncludeTreeProvider implements vscode.TreeDataProvider<IncludeT
   readonly onDidChangeTreeData = this._onDidChangeTreeData.event;
   public shouldRefresh = false;
   public treeView: IncludeTreeEntry | undefined;
-  constructor(private state: State) {}
+  constructor(private state: State) { }
 
   findRecursive(treeView: IncludeTreeEntry | undefined, filePath: string): IncludeTreeEntry | undefined {
     if (!treeView) { return undefined; }
-    if (treeView.resourceUri?.fsPath === filePath) { 
-      return treeView; 
+    if (treeView.resourceUri?.fsPath === filePath) {
+      return treeView;
     }
     for (const child of treeView.children) {
       const found = this.findRecursive(child, filePath);
-      if (found) { 
-        return found; 
+      if (found) {
+        return found;
       }
     }
     return undefined;
   }
-  getTreeItem(element: IncludeTreeEntry): vscode.TreeItem { 
-    return element; 
+  getTreeItem(element: IncludeTreeEntry): vscode.TreeItem {
+    return element;
   }
 
-  getParent(element: IncludeTreeEntry): IncludeTreeEntry | null { 
-    return element.parent; 
+  getParent(element: IncludeTreeEntry): IncludeTreeEntry | null {
+    return element.parent;
   }
   async getChildren(element?: IncludeTreeEntry): Promise<IncludeTreeEntry[] | null | undefined> {
     if (!this.treeView || this.shouldRefresh) {
       try {
         const parsedIncludes = this.state.get<IncludeTreeEntry[]>("parsedIncludes");
-        if (!parsedIncludes) { 
-          return null; 
+        if (!parsedIncludes) {
+          return null;
         }
         const ignoreTypes = includeTypes.filter(type => !!this.state.get(`modelTreeIsHidden${type.replace(" ", "_")}`));
         const ignoreFiles = this.state.get<string[]>("ignoreFilesIncludeTree");
@@ -127,13 +127,13 @@ export class GAMSIncludeTreeProvider implements vscode.TreeDataProvider<IncludeT
         vscode.window.showErrorMessage("Error creating model include tree: " + message);
       }
     }
-  if (!element) { return this.treeView ? [this.treeView] : null; }
+    if (!element) { return this.treeView ? [this.treeView] : null; }
     return element.children;
   }
   refresh(): void { this.shouldRefresh = true; this._onDidChangeTreeData.fire(); }
 }
-export function createGAMSIncludeTreeProvider(state: State): GAMSIncludeTreeProvider { 
-  return new GAMSIncludeTreeProvider(state); 
+export function createGAMSIncludeTreeProvider(state: State): GAMSIncludeTreeProvider {
+  return new GAMSIncludeTreeProvider(state);
 }
 
 interface CompileTimeVariableEntry { level: number; name: string; type: string; description: string; readonly data: Record<string, string> | null; }
@@ -162,32 +162,37 @@ export function parseIncludeFileSummary(lstFile: string, state: State): Promise<
       } else if (line.startsWith("---- Begin of Compile-time Variable List")) {
         inCompileTimeVariableList = true;
       } else if (inIncludeFileSummary && line.match(/^\s/)) {
-        const tokens = line.split(/\s+/);
-        // If the line has six tokens, then it is a valid entry
-        if (tokens.length === 7) {
-          // since we use the compile.gms file as the root, we need to remove it from the include file summary
-          if (parseInt(tokens[1]) === 1 && tokens[3] === "INPUT") {
-            // skip this entry, as it's the compile.gms file
+        // Regex: Sucht 5 Spalten gefolgt vom Rest der Zeile (Dateiname inkl. Leerzeichen)
+        const match = line.match(/^\s+(\d+)\s+(\d+)\s+([A-Z]+)\s+(\d+)\s+(\d+)\s+(.+)$/);
+
+        if (match) {
+          const [, seqStr, globalStr, typeStr, parentStr, localStr, rawFilename] = match;
+          const seq = parseInt(seqStr);
+          const global = parseInt(globalStr);
+          let type = typeStr;
+          const parentIndex = parseInt(parentStr);
+          const local = parseInt(localStr);
+
+          // Logik für Root-Datei (compile.gms)
+          if (seq === 1 && type === "INPUT") {
             return;
-          } else if (parseInt(tokens[1]) === 2) {
-            // this is the actual main file
-            tokens[3] = "INPUT";
+          } else if (seq === 2) {
+            type = "INPUT";
           }
-          // Create an object with properties corresponding to each column
-          const fixedName = fixFileName(tokens[6]);
-          const file: IncludeFileSummaryEntry = {
-            seq: parseInt(tokens[1]),
-            global: parseInt(tokens[2]),
-            type: tokens[3],
-            parentIndex: parseInt(tokens[4]),
-            local: parseInt(tokens[5]),
-            filename: fixedName ?? tokens[6]
-          };
-          // Push the object to the array
-          includeFileSummary.push(file);
+
+          const fixedName = fixFileName(rawFilename.trim());
+
+          includeFileSummary.push({
+            seq: seq,
+            global: global,
+            type: type,
+            parentIndex: parentIndex,
+            local: local,
+            filename: fixedName ?? rawFilename.trim()
+          });
         }
-      } else if (inCompileTimeVariableList && line.split(/\s+/).length >= 5) {        
-  const tokens = line.split(/\s+/);
+      } else if (inCompileTimeVariableList && line.split(/\s+/).length >= 5) {
+        const tokens = line.split(/\s+/);
         // If the line has six tokens, then it is a valid entry
         // Create an object with properties corresponding to each column
         const file: CompileTimeVariableEntry = {

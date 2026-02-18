@@ -221,8 +221,11 @@ export async function startHttpServer(state: State): Promise<number> {
               await vscode.commands.executeCommand('gams.updateDiagnostics');
             }
 
+            // get list of current diagnostics for response
+            const diagnostics = vscode.languages.getDiagnostics();
+            console.log(diagnostics)
             res.writeHead(200, { 'Content-Type': 'application/json; charset=utf-8' });
-            res.end(JSON.stringify({ ok: true }));
+            res.end(JSON.stringify({ ok: true, diagnostics }));
           } catch (e: any) {
             res.writeHead(500, { 'Content-Type': 'application/json; charset=utf-8' });
             res.end(JSON.stringify({ ok: false, error: e?.message || String(e) }));

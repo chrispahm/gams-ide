@@ -242,7 +242,7 @@ export class GetModelStructureTool implements vscode.LanguageModelTool<Record<st
     _token: vscode.CancellationToken
   ): Promise<vscode.LanguageModelToolResult> {
     try {
-      const res = await fetch(`http://localhost:${this.apiServerPort}/includeTree`);
+      const res = await fetch(`http://localhost:${this.apiServerPort}/model-structure`);
       
       if (!res.ok) {
         return createErrorResult(`Failed to fetch model structure (status ${res.status}).`);
@@ -386,13 +386,13 @@ export class CheckSyntaxErrorsTool implements vscode.LanguageModelTool<CheckSynt
         return createErrorResult(`Failed to trigger diagnostics (status ${res.status}).`);
       }
       
-      const data = await res.json() as { ok?: boolean; error?: string };
+      const data = await res.json() as { ok?: boolean; diagnostics?: unknown; error?: string };
       
       if (!data.ok) {
         return createErrorResult(`Diagnostics update failed: ${data.error || "unknown error"}.`);
       }
       
-      return createSuccessResult({ ok: true });
+      return createSuccessResult({ ok: true, diagnostics: data.diagnostics ?? [] });
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error);
       return createErrorResult(`Failed to check syntax errors: ${message}`);

@@ -164,6 +164,7 @@ async function updateDiagnostics(args: UpdateDiagnosticsArgs): Promise<void> {
         state.update('parsedIncludes', includeFileSummary);
         state.update('compileTimeVariables', compileTimeVariables);
         // call the refresh command on the include tree view
+        console.log("includeFileSummary", includeFileSummary);
         if (includeFileSummary.length > 0) {
           vscode.commands.executeCommand('gams.refreshIncludeTree');
         }

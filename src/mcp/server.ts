@@ -549,7 +549,7 @@ server.tool(
         );
       }
 
-      const data = (await res.json()) as { ok?: boolean; error?: string };
+      const data = (await res.json()) as { ok?: boolean; diagnostics?: unknown; error?: string };
 
       if (!data.ok) {
         return returnError(
@@ -561,7 +561,7 @@ server.tool(
         content: [
           {
             type: "text",
-            text: JSON.stringify({ ok: true }, null, 2),
+            text: JSON.stringify({ ok: true, diagnostics: data.diagnostics ?? [] }, null, 2),
           },
         ],
       };
