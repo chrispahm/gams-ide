@@ -2,7 +2,7 @@
   "name": "gams-ide",
   "displayName": "gams-ide",
   "description": "A GAMS integrated development environment for VSCode",
-  "version": "0.0.17",
+  "version": "0.0.18",
   "repository": {
     "type": "git",
     "url": "https://github.com/chrispahm/gams-ide"
@@ -781,14 +781,39 @@
     ],
     "chatAgents": [
       {
-        "name": "GAMS-Planner",
-        "path": "./assets/agents/GAMS-Planner.agent.md",
-        "description": "Researches a GAMS task to create multi-step plans"
+        "path": "./assets/agents/GAMS-Planner.agent.md"
       },
       {
-        "name": "GAMS-Agent",
-        "path": "./assets/agents/GAMS-Agent.agent.md",
-        "description": "An autonomous agent that can execute GAMS-related tasks"
+        "path": "./assets/agents/GAMS-Agent.agent.md"
+      }
+    ],
+    "chatSkills": [
+      {
+        "path": "./skills/capri-gams-style/SKILL.md"
+      },
+      {
+        "path": "./skills/capri-architecture/SKILL.md"
+      },
+      {
+        "path": "./skills/capri-debug-solve/SKILL.md"
+      },
+      {
+        "path": "./skills/capri-trace-symbol/SKILL.md"
+      },
+      {
+        "path": "./skills/capri-scenario-design/SKILL.md"
+      },
+      {
+        "path": "./skills/capri-policy-instruments/SKILL.md"
+      },
+      {
+        "path": "./skills/capri-environmental/SKILL.md"
+      },
+      {
+        "path": "./skills/capri-market-module/SKILL.md"
+      },
+      {
+        "path": "./skills/capri-new-module/SKILL.md"
       }
     ]
   },

@@ -1,8 +1,7 @@
 ---
 name: gams-planner
 description: 'GAMS-specific architectural planning agent'
-tools: 
-  ['read/problems', 'read/readFile', 'search', 'web', 'agent', 'chrispahm.gams-ide/gamsSearchSymbols', 'chrispahm.gams-ide/gamsSymbolDetails', 'chrispahm.gams-ide/gamsSymbolValues', 'chrispahm.gams-ide/gamsModelStructure', 'chrispahm.gams-ide/gamsSolveStatus', 'chrispahm.gams-ide/gamsReferenceTree', 'chrispahm.gams-ide/gamsCheckSyntax', 'chrispahm.gams-ide/gamsExecutionCommand', 'chrispahm.gams-ide/gamsCompileCommand', 'chrispahm.gams-ide/gamsReadListing']
+tools: [read, agent, search, web, chrispahm.gams-ide/gamsSearchSymbols, chrispahm.gams-ide/gamsSymbolDetails, chrispahm.gams-ide/gamsSymbolValues, chrispahm.gams-ide/gamsModelStructure, chrispahm.gams-ide/gamsSolveStatus, chrispahm.gams-ide/gamsReferenceTree, chrispahm.gams-ide/gamsCheckSyntax, chrispahm.gams-ide/gamsExecutionCommand, chrispahm.gams-ide/gamsCompileCommand, chrispahm.gams-ide/gamsReadListing, chrispahm.gdx-viewer/gdx-symbols, chrispahm.gdx-viewer/gdx-preview, chrispahm.gdx-viewer/gdx-domain, chrispahm.gdx-viewer/gdx-sql, chrispahm.gdx-viewer/gdx-reveal, todo]
 handoffs:
   - label: Start Implementation
     agent: gams-agent
