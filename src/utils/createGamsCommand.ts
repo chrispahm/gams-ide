@@ -14,7 +14,7 @@ interface GamsCommandResult {
 
 export default async function createGamsCommand(docFileName: string, extraArgs: string[] = [], ignoreMainGmsFile = false): Promise<GamsCommandResult> {
   // get the default settings, and define the variables
-  const defaultSettings = vscode.workspace.getConfiguration("gamsIde");  
+  const defaultSettings = vscode.workspace.getConfiguration("gamsIde");
   let gamsExecutable = await getGamsPath() as string;
   let scratchDirectory = defaultSettings.get<string | undefined>("scratchDirectory");
   let mainGmsFile = defaultSettings.get<string | undefined>("mainGmsFile");
@@ -28,10 +28,10 @@ export default async function createGamsCommand(docFileName: string, extraArgs: 
   // if the scratch directory is not specified, we use 
   // this extension's scratch directory
   if (!scratchDirectory) {
-  scratchDirectory = resolve(__dirname + '/../scrdir');
+    scratchDirectory = resolve(__dirname + '/../scrdir');
     // check if the scratch directory exists, if not, create it
     try {
-  await fs.access(scratchDirectory, fs.constants.R_OK | fs.constants.W_OK);
+      await fs.access(scratchDirectory, fs.constants.R_OK | fs.constants.W_OK);
     } catch (e) {
       // no access to scratch directory, try to create it
       try {
@@ -43,7 +43,7 @@ export default async function createGamsCommand(docFileName: string, extraArgs: 
       }
     }
   }
-    
+
   // perform a quick check if the current file is excluded from the main GMS file
   if (!ignoreMainGmsFile && mainGmsFile) {
     ignoreMainGmsFile = checkIfExcluded(docFileName, defaultSettings.get("excludeFromMainGmsFile")) ? true : false;
@@ -51,7 +51,7 @@ export default async function createGamsCommand(docFileName: string, extraArgs: 
   // if a main GMS file is specified, we try to find the file in the workspace
   if (mainGmsFile && vscode.workspace.workspaceFolders && vscode.workspace.workspaceFolders.length && !ignoreMainGmsFile) {
     // check if main GMS file is a an absolute path
-  if (mainGmsFile && !isAbsolute(mainGmsFile)) {
+    if (mainGmsFile && !isAbsolute(mainGmsFile)) {
       // if not, we have to find the absolute path using glob and update the workspace settings accordingly
       const pattern = new vscode.RelativePattern(vscode.workspace.workspaceFolders[0], `**/${mainGmsFile}`);
       const files = await vscode.workspace.findFiles(pattern);
@@ -75,7 +75,7 @@ export default async function createGamsCommand(docFileName: string, extraArgs: 
     }
     // check if the file exists, if not show buttons to either select main gams file or disable
     try {
-  await fs.access(mainGmsFile as string, fs.constants.R_OK);
+      await fs.access(mainGmsFile as string, fs.constants.R_OK);
     } catch (e) {
       // Show error message and button with link to settings
       const selectMainGMS = 'Select main GMS file';
@@ -88,29 +88,29 @@ export default async function createGamsCommand(docFileName: string, extraArgs: 
         }
       });
     }
-  mainGmsFilePath = mainGmsFile as string;
+    mainGmsFilePath = mainGmsFile as string;
     // overwrite the file name and path with the main GMS file    
     fileName = basename(mainGmsFilePath);
     filePath = dirname(mainGmsFilePath);
     // add specific command line arguments for multi-file execution
     // for known GAMS Models
-  const gamsFile = parse(mainGmsFilePath).base;
+    const gamsFile = parse(mainGmsFilePath).base?.toLowerCase();
 
     if (gamsFile === 'exp_starter.gms') {
-  commandLineArguments = (commandLineArguments as string[]).concat(
+      commandLineArguments = (commandLineArguments as string[]).concat(
         [`--scen=incgen${sep}runInc`, '--ggig=on', '--baseBreed=falsemyBasBreed']
       );
     } else if (gamsFile === 'capmod.gms') {
-  commandLineArguments = (commandLineArguments as string[]).concat(
-        ['--scen=fortran']
+      commandLineArguments = (commandLineArguments as string[]).concat(
+        ['--scen=fortran', '--ggig=on']
       );
     } else if (gamsFile === 'capreg.gms') {
-  commandLineArguments = (commandLineArguments as string[]).concat(
+      commandLineArguments = (commandLineArguments as string[]).concat(
         ['--scen=forreg', '--ggig=on']
       );
     } else if (gamsFile === 'com_.gms') {
-  commandLineArguments = (commandLineArguments as string[]).concat(
-        [`-procdirpath="${scratchDirectory}"`, '--scen=com_inc']
+      commandLineArguments = (commandLineArguments as string[]).concat(
+        [`-procdirpath="${scratchDirectory}"`, '--scen=com_inc', '--ggig=on']
       );
     }
   }
@@ -123,16 +123,16 @@ export default async function createGamsCommand(docFileName: string, extraArgs: 
   let parsedListingPath = parse(gamsFileToExecute);
   parsedListingPath.ext = '.lst';
   parsedListingPath.base = '';
-  
+
   let listingPath = format(parsedListingPath);
-  
+
   let gamsArgs = [`"${gamsFileToExecute}"`, 'PS=0', `-scrdir="${scratchDirectory}"`,
-    `--scrdir="${scratchDirectory}"`, `-workdir="${filePath}"`,
-    `-curDir="${filePath}"`];
-        
+  `--scrdir="${scratchDirectory}"`, `-workdir="${filePath}"`,
+  `-curDir="${filePath}"`];
+
   if (Array.isArray(commandLineArguments) && commandLineArguments.length > 0) { gamsArgs = gamsArgs.concat(commandLineArguments); }
   if (extraArgs?.length > 0) { gamsArgs = gamsArgs.concat(extraArgs); }
-  
+
   return {
     gamsExe: gamsExecutable,
     gamsArgs: gamsArgs,

@@ -113,7 +113,7 @@ export async function startHttpServer(state: State): Promise<number> {
             const fileName = typeof parsed?.file === 'string' ? parsed.file : undefined;
             const extraArgs = Array.isArray(parsed?.extraArgs)
               ? parsed.extraArgs.filter((a: unknown) => typeof a === 'string')
-              : [];
+              : ['lo=3'];
 
             const defaultSettings = vscode.workspace.getConfiguration('gamsIde');
             const mainGmsFile = defaultSettings.get<string | undefined>('mainGmsFile');
