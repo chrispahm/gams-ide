@@ -1,0 +1,14 @@
+<svg width="400" height="300" viewBox="0 0 400 300" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <rect x="80" y="60" width="240" height="180" rx="12" stroke="currentColor" stroke-width="2" fill="none" opacity="0.3"/>
+  <rect x="80" y="60" width="240" height="30" rx="12" fill="currentColor" opacity="0.1"/>
+  <circle cx="100" cy="75" r="5" fill="#FF5F56"/>
+  <circle cx="116" cy="75" r="5" fill="#FFBD2E"/>
+  <circle cx="132" cy="75" r="5" fill="#27C93F"/>
+  <text x="110" y="120" font-family="monospace" font-size="13" fill="currentColor" opacity="0.8">$ which gams</text>
+  <text x="110" y="145" font-family="monospace" font-size="13" fill="currentColor" opacity="0.5">/usr/local/bin/gams</text>
+  <text x="110" y="175" font-family="monospace" font-size="13" fill="currentColor" opacity="0.8">$ gams --version</text>
+  <text x="110" y="200" font-family="monospace" font-size="13" fill="currentColor" opacity="0.5">GAMS 47.1.0</text>
+  <rect x="110" y="210" width="8" height="16" fill="currentColor" opacity="0.6">
+    <animate attributeName="opacity" values="0.6;0;0.6" dur="1.2s" repeatCount="indefinite"/>
+  </rect>
+</svg>

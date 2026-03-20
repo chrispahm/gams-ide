@@ -89,20 +89,21 @@ function execAsync(command: string, state: State, lstPath: string): Promise<Exec
   });
 }
 
-export default async function updateDiagnosticsWithProgrss(args: UpdateDiagnosticsArgs): Promise<void> {
-  vscode.window.withProgress({
+export default async function updateDiagnosticsWithProgrss(args: UpdateDiagnosticsArgs): Promise<boolean> {
+  return vscode.window.withProgress({
     location: vscode.ProgressLocation.Window,
     cancellable: false,
     title: 'Compiling GAMS'
   }, async (progress) => {
     progress.report({ increment: 0 });
     (args as UpdateDiagnosticsArgs).progress = progress;
-    await updateDiagnostics(args);
+    const success = await updateDiagnostics(args);
     progress.report({ increment: 100 });
+    return success;
   });
 };
 
-async function updateDiagnostics(args: UpdateDiagnosticsArgs): Promise<void> {
+async function updateDiagnostics(args: UpdateDiagnosticsArgs): Promise<boolean> {
   const {
     document,
     collection,
@@ -137,7 +138,7 @@ async function updateDiagnostics(args: UpdateDiagnosticsArgs): Promise<void> {
     if (!res) {
       // show error in VS Code output
       await vscode.window.showErrorMessage("GAMS compilation failed: " + command);
-      return;
+      return false;
     } else if (res.error) {
       // show error in VS Code output
       // vscode.window.showErrorMessage("GAMS compilation failed: Check the GAMS output in the terminal");
@@ -256,7 +257,7 @@ async function updateDiagnostics(args: UpdateDiagnosticsArgs): Promise<void> {
           });
         }
         // return early
-        return;
+        return true;
       }
       let errors = errorFileContents.split(/\r\n?|\n/).slice(1);
       // get max errors to display from settings
@@ -288,6 +289,7 @@ async function updateDiagnostics(args: UpdateDiagnosticsArgs): Promise<void> {
         });
         collection.set(uri, diagnostics);
       });
+      return false;
     } catch (error) {
       // progress.report({ increment: 100 });
       // show error in VS Code output
@@ -321,8 +323,10 @@ async function updateDiagnostics(args: UpdateDiagnosticsArgs): Promise<void> {
       console.warn("res", res);
       console.error("error", error);
       console.warn("stdout", stdout);
+      return false;
     }
   } else {
     collection.clear();
   }
+  return false;
 };

@@ -1,8 +1,13 @@
 import * as vscode from 'vscode';
 import * as fs from 'fs/promises';
-import { resolve, basename, dirname, parse, sep, format, isAbsolute } from 'path';
+import { resolve, basename, dirname, parse, format, isAbsolute } from 'path';
 import checkIfExcluded from './checkIfExcluded';
 import getGamsPath from './getGamsPath';
+import { getGgigCommand, type ShellType } from '../ggig/index';
+
+function detectShell(): ShellType {
+  return process.platform === 'win32' ? 'cmd' : 'bash';
+}
 
 interface GamsCommandResult {
   gamsExe: string;
@@ -13,7 +18,37 @@ interface GamsCommandResult {
 }
 
 export default async function createGamsCommand(docFileName: string, extraArgs: string[] = [], ignoreMainGmsFile = false): Promise<GamsCommandResult> {
-  // get the default settings, and define the variables
+  // Check if this is a GGIG project — if so, use the XML+INI-based command builder
+  if (!ignoreMainGmsFile && vscode.workspace.workspaceFolders?.length) {
+    const settings = vscode.workspace.getConfiguration("gamsIde");
+    const explicitIni = settings.get<string>("ggigIniFile");
+    const explicitXml = settings.get<string>("ggigXmlFile");
+    const execArgs = settings.get<string[]>("commandLineArguments_execution") || [];
+    const allExtraArgs = [...execArgs, ...extraArgs];
+
+    for (const folder of vscode.workspace.workspaceFolders) {
+      try {
+        const ggigOpts = (explicitIni && explicitXml)
+          ? { iniPath: explicitIni, xmlPath: explicitXml, extraArgs: allExtraArgs }
+          : (allExtraArgs.length ? { extraArgs: allExtraArgs } : undefined);
+        const ggigSpec = await getGgigCommand(folder.uri.fsPath, 'execute', detectShell(), ggigOpts);
+        if (ggigSpec) {
+          const args = [...ggigSpec.args];
+          return {
+            gamsExe: ggigSpec.executable,
+            gamsArgs: args,
+            listingPath: ggigSpec.listingFile,
+            gamsFile: basename(ggigSpec.args[0]?.replace(/^"(.*)"$/, '$1') ?? docFileName),
+            filePath: ggigSpec.workDir,
+          };
+        }
+      } catch {
+        // GGIG detection failed, fall through to standard behavior
+      }
+    }
+  }
+
+  // Standard (non-GGIG) behavior
   const defaultSettings = vscode.workspace.getConfiguration("gamsIde");
   let gamsExecutable = await getGamsPath() as string;
   let scratchDirectory = defaultSettings.get<string | undefined>("scratchDirectory");
@@ -25,15 +60,11 @@ export default async function createGamsCommand(docFileName: string, extraArgs: 
   let fileName = basename(docFileName);
   let filePath = dirname(docFileName);
 
-  // if the scratch directory is not specified, we use 
-  // this extension's scratch directory
   if (!scratchDirectory) {
     scratchDirectory = resolve(__dirname + '/../scrdir');
-    // check if the scratch directory exists, if not, create it
     try {
       await fs.access(scratchDirectory, fs.constants.R_OK | fs.constants.W_OK);
     } catch (e) {
-      // no access to scratch directory, try to create it
       try {
         await fs.mkdir(scratchDirectory as string);
       } catch (error) {
@@ -44,40 +75,29 @@ export default async function createGamsCommand(docFileName: string, extraArgs: 
     }
   }
 
-  // perform a quick check if the current file is excluded from the main GMS file
   if (!ignoreMainGmsFile && mainGmsFile) {
     ignoreMainGmsFile = checkIfExcluded(docFileName, defaultSettings.get("excludeFromMainGmsFile")) ? true : false;
   }
-  // if a main GMS file is specified, we try to find the file in the workspace
   if (mainGmsFile && vscode.workspace.workspaceFolders && vscode.workspace.workspaceFolders.length && !ignoreMainGmsFile) {
-    // check if main GMS file is a an absolute path
     if (mainGmsFile && !isAbsolute(mainGmsFile)) {
-      // if not, we have to find the absolute path using glob and update the workspace settings accordingly
       const pattern = new vscode.RelativePattern(vscode.workspace.workspaceFolders[0], `**/${mainGmsFile}`);
       const files = await vscode.workspace.findFiles(pattern);
 
       if (files && files.length > 0) {
         mainGmsFilePath = files[0].fsPath;
-        // update the workspace settings
         vscode.workspace.getConfiguration().update("gamsIde.mainGmsFile", mainGmsFilePath, vscode.ConfigurationTarget.Workspace);
       } else {
-        // Show error message and button with link to settings
         const openSettings = 'Open Settings';
-        const removeMainGmsFile = 'Remove main GMS file';
         await vscode.window.showErrorMessage(`main GMS file ${mainGmsFile} not found in workspace. Please update the workspace settings, or disable main GMS file.`, openSettings).then((selection: string | undefined) => {
           if (selection === openSettings) {
             vscode.commands.executeCommand('workbench.action.openSettings', 'gamsIde.mainGmsFile');
-          } else if (selection === removeMainGmsFile) {
-            vscode.workspace.getConfiguration().update("gamsIde.mainGmsFile", "", vscode.ConfigurationTarget.Workspace);
           }
         });
       }
     }
-    // check if the file exists, if not show buttons to either select main gams file or disable
     try {
       await fs.access(mainGmsFile as string, fs.constants.R_OK);
     } catch (e) {
-      // Show error message and button with link to settings
       const selectMainGMS = 'Select main GMS file';
       const removeMainGmsFile = 'Remove main GMS file';
       await vscode.window.showErrorMessage(`Main GMS file ${mainGmsFile} not found in workspace. Please update the workspace settings, or disable main GMS file.`, selectMainGMS, removeMainGmsFile).then((selection: string | undefined) => {
@@ -89,30 +109,8 @@ export default async function createGamsCommand(docFileName: string, extraArgs: 
       });
     }
     mainGmsFilePath = mainGmsFile as string;
-    // overwrite the file name and path with the main GMS file    
     fileName = basename(mainGmsFilePath);
     filePath = dirname(mainGmsFilePath);
-    // add specific command line arguments for multi-file execution
-    // for known GAMS Models
-    const gamsFile = parse(mainGmsFilePath).base?.toLowerCase();
-
-    if (gamsFile === 'exp_starter.gms') {
-      commandLineArguments = (commandLineArguments as string[]).concat(
-        [`--scen=incgen${sep}runInc`, '--ggig=on', '--baseBreed=falsemyBasBreed']
-      );
-    } else if (gamsFile === 'capmod.gms') {
-      commandLineArguments = (commandLineArguments as string[]).concat(
-        ['--scen=fortran', '--ggig=on']
-      );
-    } else if (gamsFile === 'capreg.gms') {
-      commandLineArguments = (commandLineArguments as string[]).concat(
-        ['--scen=forreg', '--ggig=on']
-      );
-    } else if (gamsFile === 'com_.gms') {
-      commandLineArguments = (commandLineArguments as string[]).concat(
-        [`-procdirpath="${scratchDirectory}"`, '--scen=com_inc', '--ggig=on']
-      );
-    }
   }
 
   let gamsFileToExecute = docFileName;

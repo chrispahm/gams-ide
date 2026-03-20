@@ -1,0 +1,22 @@
+<svg width="400" height="300" viewBox="0 0 400 300" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <!-- File icon -->
+  <rect x="130" y="50" width="140" height="170" rx="4" stroke="currentColor" stroke-width="2" fill="none" opacity="0.3"/>
+  <path d="M230 50 L270 90 L270 220 Q270 224 266 224 L134 224 Q130 224 130 220 L130 54 Q130 50 134 50 Z" stroke="currentColor" stroke-width="2" fill="none" opacity="0.3"/>
+  <path d="M230 50 L230 86 Q230 90 234 90 L270 90" stroke="currentColor" stroke-width="2" fill="none" opacity="0.3"/>
+  <!-- File content lines -->
+  <text x="148" y="120" font-family="monospace" font-size="11" fill="currentColor" opacity="0.5">gamsexe=...</text>
+  <text x="148" y="140" font-family="monospace" font-size="11" fill="currentColor" opacity="0.5">curtask=...</text>
+  <text x="148" y="160" font-family="monospace" font-size="11" fill="currentColor" opacity="0.5">curproject=...</text>
+  <!-- Label -->
+  <text x="200" y="205" font-family="sans-serif" font-size="12" fill="currentColor" opacity="0.6" text-anchor="middle">default.ini</text>
+  <!-- Arrow -->
+  <path d="M200 235 L200 265" stroke="currentColor" stroke-width="2" opacity="0.4" marker-end="url(#arrow)"/>
+  <defs>
+    <marker id="arrow" markerWidth="8" markerHeight="8" refX="6" refY="4" orient="auto">
+      <path d="M0,0 L8,4 L0,8" fill="none" stroke="currentColor" stroke-width="1.5" opacity="0.4"/>
+    </marker>
+  </defs>
+  <!-- Settings gear -->
+  <circle cx="200" cy="278" r="10" stroke="currentColor" stroke-width="2" fill="none" opacity="0.4"/>
+  <circle cx="200" cy="278" r="3" fill="currentColor" opacity="0.4"/>
+</svg>

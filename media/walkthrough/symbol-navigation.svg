@@ -1,0 +1,27 @@
+<svg width="400" height="300" viewBox="0 0 400 300" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <!-- Code editor panel -->
+  <rect x="30" y="40" width="180" height="220" rx="6" stroke="currentColor" stroke-width="1.5" fill="none" opacity="0.3"/>
+  <text x="45" y="65" font-family="sans-serif" font-size="10" fill="currentColor" opacity="0.4">model.gms</text>
+  <line x1="30" y1="75" x2="210" y2="75" stroke="currentColor" stroke-width="1" opacity="0.15"/>
+  <text x="45" y="100" font-family="monospace" font-size="11" fill="currentColor" opacity="0.4">Set i /1*10/;</text>
+  <text x="45" y="120" font-family="monospace" font-size="11" fill="currentColor" opacity="0.4">Parameter</text>
+  <rect x="43" y="127" width="70" height="16" rx="2" fill="currentColor" opacity="0.15"/>
+  <text x="45" y="140" font-family="monospace" font-size="11" fill="currentColor" opacity="0.8" font-weight="bold">p_demand</text>
+  <text x="115" y="140" font-family="monospace" font-size="11" fill="currentColor" opacity="0.4">(i);</text>
+  <text x="45" y="160" font-family="monospace" font-size="11" fill="currentColor" opacity="0.4">Variable</text>
+  <text x="45" y="180" font-family="monospace" font-size="11" fill="currentColor" opacity="0.4">  v_supply(i);</text>
+  <!-- Arrow connecting -->
+  <path d="M215 138 L245 138" stroke="currentColor" stroke-width="1.5" opacity="0.3" stroke-dasharray="4,3"/>
+  <!-- Sidebar panel -->
+  <rect x="250" y="40" width="120" height="220" rx="6" stroke="currentColor" stroke-width="1.5" fill="none" opacity="0.3"/>
+  <text x="265" y="65" font-family="sans-serif" font-size="10" fill="currentColor" opacity="0.4">References</text>
+  <line x1="250" y1="75" x2="370" y2="75" stroke="currentColor" stroke-width="1" opacity="0.15"/>
+  <text x="265" y="100" font-family="sans-serif" font-size="13" fill="currentColor" opacity="0.8" font-weight="bold">p_demand</text>
+  <text x="265" y="118" font-family="sans-serif" font-size="10" fill="currentColor" opacity="0.4">Parameter</text>
+  <text x="265" y="145" font-family="sans-serif" font-size="10" fill="currentColor" opacity="0.5">Domain</text>
+  <text x="275" y="162" font-family="sans-serif" font-size="10" fill="currentColor" opacity="0.3">i</text>
+  <text x="265" y="185" font-family="sans-serif" font-size="10" fill="currentColor" opacity="0.5">Declared in</text>
+  <text x="275" y="202" font-family="sans-serif" font-size="10" fill="currentColor" opacity="0.3">model.gms, 3</text>
+  <text x="265" y="225" font-family="sans-serif" font-size="10" fill="currentColor" opacity="0.5">Referenced in</text>
+  <text x="275" y="242" font-family="sans-serif" font-size="10" fill="currentColor" opacity="0.3">solve.gms, 12</text>
+</svg>

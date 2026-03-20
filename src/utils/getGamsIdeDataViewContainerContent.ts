@@ -57,8 +57,10 @@ export default function getGamsIdeDataViewContainerContent(options: DataViewCont
       <vscode-dropdown id="gams-symbols-dropdown">
       </vscode-dropdown>
     </div>
-    <pre id="gams-symbols-content" style="padding: 40px 0px;">
-      ${ !isDataParsingEnabled ? "GAMS Data parsing is disabled. <a class='link' onclick='enableDataParsing()'>Click here to enable it.</a>" : "No data to show. Click on a symbol to get started!" }
+    <pre id="gams-symbols-content" style="padding: 40px 0px; white-space: pre-wrap;">
+      ${ !isDataParsingEnabled
+        ? "<b>GAMS Data Panel</b>\n\nView set elements, parameter values, and equation listings after running your model.\n\n<a class='link' onclick='enableDataParsing()'>Enable data parsing</a> to get started."
+        : "<b>GAMS Data Panel</b>\n\nClick on a symbol in your GAMS file to view its data values here.\n\nData is updated each time your model compiles." }
     </pre>
   </body>
   <script type="module">

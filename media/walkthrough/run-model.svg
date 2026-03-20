@@ -1,0 +1,10 @@
+<svg width="400" height="300" viewBox="0 0 400 300" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <!-- Play button -->
+  <circle cx="200" cy="120" r="45" stroke="currentColor" stroke-width="2.5" fill="none" opacity="0.3"/>
+  <polygon points="188,98 188,142 222,120" fill="currentColor" opacity="0.4"/>
+  <!-- Terminal output below -->
+  <rect x="80" y="185" width="240" height="80" rx="6" stroke="currentColor" stroke-width="1.5" fill="none" opacity="0.2"/>
+  <text x="95" y="210" font-family="monospace" font-size="10" fill="currentColor" opacity="0.4">--- Starting execution</text>
+  <text x="95" y="228" font-family="monospace" font-size="10" fill="#27C93F" opacity="0.7">*** Status: Normal completion</text>
+  <text x="95" y="246" font-family="monospace" font-size="10" fill="currentColor" opacity="0.4">--- Job model.gms finished</text>
+</svg>

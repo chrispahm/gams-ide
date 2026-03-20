@@ -2,7 +2,7 @@
   "name": "gams-ide",
   "displayName": "gams-ide",
   "description": "A GAMS integrated development environment for VSCode",
-  "version": "0.0.18",
+  "version": "0.0.20",
   "repository": {
     "type": "git",
     "url": "https://github.com/chrispahm/gams-ide"
@@ -23,7 +23,9 @@
       {
         "scopeName": "source.python.embedded.gams",
         "path": "./syntaxes/embedded-python.json",
-        "injectTo": ["source.gms"],
+        "injectTo": [
+          "source.gms"
+        ],
         "embeddedLanguages": {
           "meta.embedded.block.python": "python"
         }
@@ -235,6 +237,14 @@
         }
       },
       {
+        "command": "gams.setupGgigProject",
+        "title": "GAMS: Setup GGIG Project (from default.ini)"
+      },
+      {
+        "command": "gams.onboarding",
+        "title": "GAMS: Run Project Setup Wizard"
+      },
+      {
         "command": "gams.modelTree.resetHiddenFiles",
         "title": "Reset hidden files",
         "icon": {
@@ -371,6 +381,16 @@
           "description": "dispWidth setting if parse symbol values is turned on",
           "type": "integer",
           "default": 15
+        },
+        "gamsIde.ggigIniFile": {
+          "description": "Path to GGIG .ini file. When set together with ggigXmlFile, GGIG commands are built from these files instead of auto-discovery.",
+          "type": "string",
+          "default": ""
+        },
+        "gamsIde.ggigXmlFile": {
+          "description": "Path to GGIG XML definition file. When set together with ggigIniFile, GGIG commands are built from these files instead of auto-discovery.",
+          "type": "string",
+          "default": ""
         },
         "gamsIde.mcpServerPort": {
           "description": "Port number for the GAMS MCP server. The MCP server provides tools for AI assistants to interact with GAMS models.",
@@ -602,7 +622,9 @@
               "description": "The natural language query to find symbols for."
             }
           },
-          "required": ["query"]
+          "required": [
+            "query"
+          ]
         }
       },
       {
@@ -618,11 +640,15 @@
           "properties": {
             "symbols": {
               "type": "array",
-              "items": { "type": "string" },
+              "items": {
+                "type": "string"
+              },
               "description": "List of symbol names to fetch info for (case insensitive)."
             }
           },
-          "required": ["symbols"]
+          "required": [
+            "symbols"
+          ]
         }
       },
       {
@@ -638,11 +664,15 @@
           "properties": {
             "symbols": {
               "type": "array",
-              "items": { "type": "string" },
+              "items": {
+                "type": "string"
+              },
               "description": "List of symbol names to fetch data for (case sensitive, matching the data store)."
             }
           },
-          "required": ["symbols"]
+          "required": [
+            "symbols"
+          ]
         }
       },
       {
@@ -674,7 +704,9 @@
               "description": "Absolute path to the .lst file."
             }
           },
-          "required": ["lstFilePath"]
+          "required": [
+            "lstFilePath"
+          ]
         }
       },
       {
@@ -725,7 +757,9 @@
             },
             "extraArgs": {
               "type": "array",
-              "items": { "type": "string" },
+              "items": {
+                "type": "string"
+              },
               "description": "Optional additional command line arguments to append to the GAMS command."
             }
           }
@@ -748,7 +782,9 @@
             },
             "extraArgs": {
               "type": "array",
-              "items": { "type": "string" },
+              "items": {
+                "type": "string"
+              },
               "description": "Optional additional command line arguments to append to the GAMS command."
             }
           }
@@ -771,11 +807,16 @@
             },
             "symbols": {
               "type": "array",
-              "items": { "type": "string" },
+              "items": {
+                "type": "string"
+              },
               "description": "List of symbol names to filter for."
             }
           },
-          "required": ["lstFilePath", "symbols"]
+          "required": [
+            "lstFilePath",
+            "symbols"
+          ]
         }
       }
     ],
@@ -815,6 +856,75 @@
       {
         "path": "./skills/capri-new-module/SKILL.md"
       }
+    ],
+    "walkthroughs": [
+      {
+        "id": "gamsIde.gettingStarted",
+        "title": "Getting Started with GAMS IDE",
+        "description": "Set up your GAMS development environment and learn the key features.",
+        "steps": [
+          {
+            "id": "gamsIde.configureGams",
+            "title": "Configure GAMS Executable",
+            "description": "GAMS IDE needs to know where your GAMS installation is located.\n\nIf GAMS is on your PATH, we'll find it automatically. Otherwise, set it manually.\n\n[Open GAMS Settings](command:workbench.action.openSettings?%5B%22gamsIde.gamsExecutable%22%5D)",
+            "media": {
+              "svg": "media/walkthrough/gams-executable.svg",
+              "altText": "Configure GAMS executable path"
+            },
+            "completionEvents": [
+              "onSettingChanged:gamsIde.gamsExecutable"
+            ]
+          },
+          {
+            "id": "gamsIde.setupProject",
+            "title": "Set Up Your Project",
+            "description": "If you're working with a **GGIG-based model** (CAPRI, FarmDyn, CGEBOX), we can auto-configure your project from `default.ini`.\n\nFor other GAMS projects, set your main file manually.\n\n[Run Project Setup Wizard](command:gams.onboarding)\n\n[Select Main GAMS File](command:gams.selectMainGmsFile)",
+            "media": {
+              "svg": "media/walkthrough/ggig-setup.svg",
+              "altText": "Set up your GAMS project"
+            },
+            "completionEvents": [
+              "onSettingChanged:gamsIde.mainGmsFile"
+            ]
+          },
+          {
+            "id": "gamsIde.symbolNavigation",
+            "title": "Navigate Symbols",
+            "description": "Click on any GAMS symbol (set, parameter, variable, equation) in your code to see its details in the **GAMS References** sidebar.\n\nYou'll see where it's declared, defined, assigned, and referenced across your entire model.\n\n[Open GAMS Sidebar](command:gams.openSidebar)",
+            "media": {
+              "svg": "media/walkthrough/symbol-navigation.svg",
+              "altText": "Symbol navigation in the sidebar"
+            },
+            "completionEvents": [
+              "onCommand:gams.openSidebar"
+            ]
+          },
+          {
+            "id": "gamsIde.runModel",
+            "title": "Run Your Model",
+            "description": "Run your GAMS model directly from VS Code. Errors appear inline in your editor, and listing files are parsed automatically.\n\n**Keyboard:** Use the Command Palette and type `GAMS: Run`\n\n**Sidebar:** Click the play button in the GAMS References panel\n\n[Run GAMS Model](command:gams.run)",
+            "media": {
+              "svg": "media/walkthrough/run-model.svg",
+              "altText": "Running a GAMS model"
+            },
+            "completionEvents": [
+              "onCommand:gams.run"
+            ]
+          },
+          {
+            "id": "gamsIde.aiTools",
+            "title": "Use AI Tools",
+            "description": "GAMS IDE provides tools that AI assistants can use to understand your model:\n\n- **Search symbols** by natural language\n- **Inspect symbol details** and cross-references\n- **Check syntax errors** and solve status\n- **Get model structure** and data values\n\nIn VS Code Copilot Chat, reference tools with `#gams`. For external AI assistants, start the MCP server:\n\n[Start MCP Server](command:gams.startMcpServer)",
+            "media": {
+              "svg": "media/walkthrough/ai-tools.svg",
+              "altText": "AI assistant integration"
+            },
+            "completionEvents": [
+              "onCommand:gams.startMcpServer"
+            ]
+          }
+        ]
+      }
     ]
   },
   "main": "./out/extension.js",
@@ -851,6 +961,7 @@
     "@duckdb/duckdb-wasm": "^1.30.1-dev2.0",
     "@modelcontextprotocol/sdk": "^1.18.0",
     "@vscode/codicons": "^0.0.33",
+    "fast-xml-parser": "^4.5.4",
     "glob": "^10.2.7",
     "lodash": "^4.17.21",
     "readline-specific": "^1.0.4",

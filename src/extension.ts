@@ -16,6 +16,9 @@ import { ReferenceSymbol } from "./types/gams-symbols";
 import { startHttpServer } from "./httpServer";
 import { registerGamsLmTools } from "./lm/lmTools";
 import { startMcpHttpServer, stopMcpHttpServer, isMcpServerRunning, getMcpServerUrl } from "./mcp/httpServer";
+import { setupGgigProject } from "./ggig/setupGgigProject";
+import { getOnboardingState, shouldShowOnboarding, handleOnboardingAction } from "./ggig/onboarding";
+import createGamsCommand from "./utils/createGamsCommand";
 
 let terminal: vscode.Terminal;
 let gamsView: vscode.WebviewView | undefined;
@@ -65,7 +68,7 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
 		// check if the active editor is a GAMS file
 		const skipDiagnosticsOnFileOpen = vscode.workspace.getConfiguration("gamsIde").get("skipDiagnosticsOnFileOpen");
 		if (document.languageId === "gams" && !skipDiagnosticsOnFileOpen) {
-			await updateDiagnostics({ document, collection, state, terminal });
+			await updateDiagnosticsAndRefresh({ document, collection, state, terminal });
 		}
 	}
 
@@ -83,7 +86,7 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
 				const skipDiagnosticsOnFileOpen = vscode.workspace.getConfiguration("gamsIde").get("skipDiagnosticsOnFileOpen");
 				const file = editor.document.fileName;
 				if (!skipDiagnosticsOnFileOpen && (!mainGmsFile || checkIfExcluded(file, excludeFromMainGmsFile))) {
-					await updateDiagnostics({
+					await updateDiagnosticsAndRefresh({
 						document: editor.document,
 						collection,
 						state,
@@ -124,7 +127,7 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
 			// check if "runDiagnosticsOnSave" is enabled
 			const runDiagnosticsOnSave = vscode.workspace.getConfiguration("gamsIde").get("runDiagnosticsOnSave");
 			if (document && document.languageId === "gams" && runDiagnosticsOnSave) {
-				await updateDiagnostics({ document, collection, state, terminal });
+				await updateDiagnosticsAndRefresh({ document, collection, state, terminal });
 			}
 		})
 	);
@@ -240,12 +243,31 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
 
 	updateStatusBar(gamsStatusBarItem);
 
+	// register GGIG project setup command (legacy alias)
+	context.subscriptions.push(
+		vscode.commands.registerCommand("gams.setupGgigProject", setupGgigProject)
+	);
+
+	// register onboarding wizard command
+	context.subscriptions.push(
+		vscode.commands.registerCommand("gams.onboarding", async () => {
+			// Reset onboarding state so it can be re-run
+			await context.workspaceState.update('gamsIde.onboardingCompleted', false);
+			await context.workspaceState.update('gamsIde.onboardingSkipped', false);
+			await vscode.commands.executeCommand('gamsIdeView.focus');
+			if (gamsView) {
+				const state = await getOnboardingState(context);
+				gamsView.webview.postMessage({ command: 'showOnboarding', data: state });
+			}
+		})
+	);
+
 	// register a command to update diagnostics
 	context.subscriptions.push(
 		vscode.commands.registerCommand("gams.updateDiagnostics", async () => {
 			const editor = vscode.window.activeTextEditor;
 			if (editor && editor.document.languageId === "gams") {
-				await updateDiagnostics({ document: editor.document, collection, state, terminal });
+				await updateDiagnosticsAndRefresh({ document: editor.document, collection, state, terminal });
 			}
 		})
 	);
@@ -265,7 +287,7 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
 				// re-run diagnostics so that the data view is updated
 				const editor = vscode.window.activeTextEditor;
 				if (editor && editor.document.languageId === "gams") {
-					await updateDiagnostics({ forceDataParsing: true, document: editor.document, collection, state, terminal });
+					await updateDiagnosticsAndRefresh({ forceDataParsing: true, document: editor.document, collection, state, terminal });
 				}
 			}
 		})
@@ -387,6 +409,36 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
 		})
 	);
 
+	async function sendSettingsToWebview(webviewView: vscode.WebviewView, docFileName?: string) {
+		const config = vscode.workspace.getConfiguration('gamsIde');
+		const compileOnSave = config.get<boolean>('runDiagnosticsOnSave', true);
+
+		let gamsCommandPreview = '';
+		try {
+			const fileName = docFileName || vscode.window.activeTextEditor?.document?.fileName || '';
+			if (fileName) {
+				const cmd = await createGamsCommand(fileName);
+				gamsCommandPreview = cmd.gamsExe + ' ' + cmd.gamsArgs.join(' ');
+			}
+		} catch {
+			// If command construction fails, show nothing
+		}
+
+		webviewView.webview.postMessage({
+			command: 'updateSettings',
+			data: { compileOnSave, gamsCommandPreview }
+		});
+	}
+
+	// Wrapper that refreshes the sidebar command preview after every diagnostics run
+	async function updateDiagnosticsAndRefresh(args: Parameters<typeof updateDiagnostics>[0]) {
+		const result = await updateDiagnostics(args);
+		if (gamsView) {
+			sendSettingsToWebview(gamsView, args.document.fileName);
+		}
+		return result;
+	}
+
 	// add the gams reference tree sidebar
 	vscode.window.registerWebviewViewProvider('gamsIdeView', {
 		resolveWebviewView(
@@ -473,7 +525,59 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
 						case 'stopGams':
 							terminal.sendText(String.fromCharCode(3));
 							break;
-						case 'getState':
+						case 'onboardingAction': {
+						const browseActions = ['browseIni', 'browseXml', 'browseGamsExe', 'browseScratchDir'];
+						const onboardingResult = await handleOnboardingAction(context, message.data.action, message.data);
+						if (onboardingResult) {
+							const cmd = browseActions.includes(message.data.action) ? 'updateOnboardingInPlace' : 'updateOnboarding';
+							gamsView?.webview.postMessage({ command: cmd, data: onboardingResult });
+						}
+						if (message.data.action === 'skipOnboarding') {
+							setTimeout(() => gamsView?.webview.postMessage({ command: 'hideOnboarding' }), 1500);
+						} else if (onboardingResult?.step === 'complete') {
+							// Trigger compilation on complete
+							const mainGmsFile = vscode.workspace.getConfiguration('gamsIde').get<string>('mainGmsFile');
+							const activeDoc = vscode.window.activeTextEditor?.document;
+							const gmsDoc = activeDoc?.languageId === 'gams' ? activeDoc : undefined;
+
+							if (mainGmsFile || gmsDoc) {
+								gamsView?.webview.postMessage({ command: 'onboardingCompileStatus', data: 'compiling' });
+								try {
+									const docToCompile = mainGmsFile
+										? await vscode.workspace.openTextDocument(mainGmsFile)
+										: gmsDoc!;
+									const success = await updateDiagnosticsAndRefresh({ document: docToCompile, collection, state, terminal });
+									gamsView?.webview.postMessage({ command: 'onboardingCompileResult', data: { success } });
+								} catch {
+									gamsView?.webview.postMessage({ command: 'onboardingCompileResult', data: { success: false } });
+								}
+							}
+						} else if (message.data.action === 'completeOnboarding') {
+							gamsView?.webview.postMessage({ command: 'hideOnboarding' });
+						}
+						break;
+					}
+					case 'toggleCompileOnSave': {
+						const config = vscode.workspace.getConfiguration('gamsIde');
+						await config.update('runDiagnosticsOnSave', message.data.value, vscode.ConfigurationTarget.Workspace);
+						break;
+					}
+					case 'openSettings':
+						vscode.commands.executeCommand('workbench.action.openSettings', 'gamsIde');
+						break;
+					case 'openSettingsJson':
+						vscode.commands.executeCommand('workbench.action.openSettings', 'gamsIde');
+						break;
+					case 'openDocs':
+						vscode.env.openExternal(vscode.Uri.parse('https://chrispahm.github.io/gams-ide/'));
+						break;
+					case 'getState':
+							// Check if onboarding should be shown first
+							if (await shouldShowOnboarding(context)) {
+								const onboardingState = await getOnboardingState(context);
+								webviewView.webview.postMessage({ command: 'showOnboarding', data: onboardingState });
+								break;
+							}
 							const activeEditor = vscode.window.activeTextEditor;
 							const isListing = !!activeEditor && activeEditor.document.fileName.toLowerCase().endsWith('.lst');
 							if (isListing) {
@@ -511,6 +615,8 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
 									});
 								}
 							}
+							// Always send current settings to the webview
+							sendSettingsToWebview(webviewView);
 							break;
 					}
 				},
@@ -607,7 +713,7 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
 				// re-run diagnostics so that the data view is updated
 				const editor = vscode.window.activeTextEditor;
 				if (editor && editor.document.languageId === "gams") {
-					updateDiagnostics({ document: editor.document, collection, state, terminal });
+					updateDiagnosticsAndRefresh({ document: editor.document, collection, state, terminal });
 				}
 			}
 		} else if (e.affectsConfiguration("gamsIde.mainGmsFile") || e.affectsConfiguration("gamsIde.excludeFromMainGmsFile")) {
@@ -615,7 +721,7 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
 			// re-run diagnostics
 			const editor = vscode.window.activeTextEditor;
 			if (editor && editor.document.languageId === "gams") {
-				updateDiagnostics({ document: editor.document, collection, state, terminal });
+				updateDiagnosticsAndRefresh({ document: editor.document, collection, state, terminal });
 			}
 		} else if (e.affectsConfiguration("gamsIde.enableModelIncludeTreeView")) {
 			if (vscode.workspace.getConfiguration("gamsIde").get("enableModelIncludeTreeView")) {
@@ -632,8 +738,13 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
 				includeTreeProvider = undefined;
 			}
 		}
+		// Update sidebar settings section when any gamsIde setting changes
+		if (e.affectsConfiguration("gamsIde") && gamsView) {
+			sendSettingsToWebview(gamsView);
+		}
 	});
 	context.subscriptions.push(configChangeDisposable);
+
 }
 
 // this method is called when your extension is deactivated

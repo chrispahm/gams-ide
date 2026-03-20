@@ -1,0 +1,15 @@
+<svg width="400" height="300" viewBox="0 0 400 300" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <!-- Chat bubble from user -->
+  <rect x="50" y="50" width="200" height="45" rx="10" stroke="currentColor" stroke-width="1.5" fill="none" opacity="0.2"/>
+  <text x="68" y="78" font-family="sans-serif" font-size="11" fill="currentColor" opacity="0.5">What does p_demand do?</text>
+  <!-- Chat bubble from AI -->
+  <rect x="150" y="115" width="210" height="70" rx="10" stroke="currentColor" stroke-width="1.5" fill="none" opacity="0.3"/>
+  <text x="168" y="140" font-family="sans-serif" font-size="11" fill="currentColor" opacity="0.6">p_demand(i) is a parameter</text>
+  <text x="168" y="157" font-family="sans-serif" font-size="11" fill="currentColor" opacity="0.6">storing demand quantities.</text>
+  <text x="168" y="174" font-family="sans-serif" font-size="11" fill="currentColor" opacity="0.4">Defined in data.gms:42</text>
+  <!-- Tool use indicator -->
+  <rect x="80" y="210" width="240" height="35" rx="6" fill="currentColor" opacity="0.06"/>
+  <text x="105" y="232" font-family="monospace" font-size="10" fill="currentColor" opacity="0.4">Used: #gamsSymbolDetails</text>
+  <!-- Sparkle icon -->
+  <path d="M90 225 l3-8 3 8 8 3-8 3-3 8-3-8-8-3z" fill="currentColor" opacity="0.3"/>
+</svg>
